@@ -34,22 +34,23 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ================== Logo配置 ==================
-# 盛京医院Logo (Base64编码) - 请替换为实际logo
-# 可以将logo.png放在同目录下，使用以下代码读取：
-# with open("logo.png", "rb") as f:
-#     LOGO_BASE64 = base64.b64encode(f.read()).decode()
+# ================== Logo加载 ==================
+def load_logo():
+    """加载Logo图片，返回Base64编码"""
+    logo_paths = ['logo.png', 'logo.jpg', 'logo.jpeg', 'assets/logo.png']
+    
+    for path in logo_paths:
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+    
+    # 如果没有找到Logo文件，返回None
+    return None
 
-# 这里使用一个占位符logo（医院图标SVG）
-LOGO_SVG = """
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="60" height="60">
-  <circle cx="50" cy="50" r="48" fill="#1a5276" stroke="#f1c40f" stroke-width="3"/>
-  <text x="50" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">盛京</text>
-  <text x="50" y="52" text-anchor="middle" fill="white" font-size="14" font-weight="bold">医院</text>
-  <text x="50" y="72" text-anchor="middle" fill="#f1c40f" font-size="8">SHENGJING</text>
-</svg>
-"""
-LOGO_BASE64 = base64.b64encode(LOGO_SVG.encode()).decode()
+LOGO_BASE64 = load_logo()
+
+# 判断是否有Logo
+HAS_LOGO = LOGO_BASE64 is not None
 
 # ================== CSS样式 ==================
 st.markdown("""
@@ -70,73 +71,102 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.5rem 0;
+        padding: 0.8rem 0;
         margin-bottom: 0.5rem;
-        border-bottom: 1px solid #e0e0e0;
+        border-bottom: 2px solid #1a5276;
+        background: linear-gradient(90deg, #f8f9fa, #ffffff);
     }
     .logo-section {
         display: flex;
         align-items: center;
         gap: 15px;
     }
-    .logo-section img {
-        height: 55px;
+    .logo-img {
+        height: 60px;
         width: auto;
+        border-radius: 8px;
     }
     .logo-text h2 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         color: #1a5276;
         font-weight: 700;
     }
     .logo-text p {
         margin: 0;
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         color: #666;
     }
     
     /* 医院标题头 */
     .hospital-header {
         background: linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #1a5276 100%);
-        padding: 1rem 1.5rem;
-        border-radius: 10px;
+        padding: 1.2rem 2rem;
+        border-radius: 12px;
         margin-bottom: 1rem;
         box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 20px;
+        gap: 25px;
     }
     .header-logo {
         background: white;
-        border-radius: 50%;
-        padding: 5px;
+        border-radius: 10px;
+        padding: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
     .header-logo img {
-        height: 60px;
-        width: 60px;
-        border-radius: 50%;
+        height: 70px;
+        width: auto;
+        display: block;
     }
     .header-text {
         text-align: center;
     }
     .header-text h1 {
         color: white;
-        font-size: 1.4rem;
-        margin: 0 0 0.2rem 0;
+        font-size: 1.5rem;
+        margin: 0 0 0.3rem 0;
         font-weight: 600;
     }
     .header-text .subtitle {
         color: rgba(255,255,255,0.9);
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         margin: 0;
     }
     .header-text .hospital-name {
         color: #f1c40f;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         font-weight: 600;
-        margin-top: 0.2rem;
+        margin-top: 0.3rem;
+    }
+    
+    /* 无Logo时的纯文字头部 */
+    .hospital-header-nologo {
+        background: linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #1a5276 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        text-align: center;
+    }
+    .hospital-header-nologo h1 {
+        color: white;
+        font-size: 1.6rem;
+        margin: 0 0 0.3rem 0;
+        font-weight: 600;
+    }
+    .hospital-header-nologo .subtitle {
+        color: rgba(255,255,255,0.9);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+    .hospital-header-nologo .hospital-name {
+        color: #f1c40f;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-top: 0.4rem;
     }
     
     /* 模块卡片 */
@@ -161,7 +191,7 @@ st.markdown("""
     .module-title.surgery { background: linear-gradient(90deg, #e67e22, #d35400); }
     .module-title.markers { background: linear-gradient(90deg, #1abc9c, #16a085); }
     
-    /* 结果区域 - 全宽 */
+    /* 结果区域 */
     .result-section {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-radius: 12px;
@@ -179,7 +209,7 @@ st.markdown("""
         border-bottom: 2px solid #3498db;
     }
     
-    /* 图表盒子 */
+    /* 图表容器 */
     .chart-container {
         background: white;
         border-radius: 10px;
@@ -221,7 +251,6 @@ st.markdown("""
     
     /* 选择框 */
     .stSelectbox label { font-weight: 500; color: #2c3e50; font-size: 0.8rem; }
-    .stSelectbox > div > div { font-size: 0.85rem; }
     
     /* 标签页 */
     .stTabs [data-baseweb="tab-list"] { gap: 0; background: #f8f9fa; border-radius: 8px; padding: 3px; }
@@ -240,7 +269,7 @@ st.markdown("""
     /* 页脚 */
     .footer {
         background: linear-gradient(135deg, #1a5276, #2980b9);
-        padding: 1rem;
+        padding: 1rem 1.5rem;
         border-radius: 10px;
         margin-top: 1.5rem;
         text-align: center;
@@ -248,11 +277,16 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 15px;
+        gap: 20px;
     }
-    .footer img { height: 40px; width: 40px; border-radius: 50%; background: white; padding: 3px; }
-    .footer-text .hospital-name { color: #f1c40f; font-weight: 600; font-size: 0.95rem; }
-    .footer-text .version { font-size: 0.8rem; opacity: 0.9; }
+    .footer-logo {
+        background: white;
+        border-radius: 8px;
+        padding: 5px;
+    }
+    .footer-logo img { height: 50px; width: auto; }
+    .footer-text .hospital-name { color: #f1c40f; font-weight: 600; font-size: 1rem; }
+    .footer-text .version { font-size: 0.85rem; opacity: 0.9; margin-top: 3px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -550,8 +584,7 @@ def make_gauge(risk, lang):
         number={'suffix':'%', 'font':{'size':64, 'color':col, 'family':'Arial Black'}},
         title={'text': f"<b>{get_text('overall_risk', lang)}</b><br><span style='font-size:26px;color:{col}'>{lv}</span>", 'font':{'size':20}},
         gauge={'axis':{'range':[0,100], 'tickwidth':2, 'tickcolor':'#555', 'tickfont':{'size':16}, 'dtick':25},
-               'bar':{'color':col, 'thickness':0.7},
-               'bgcolor':'#f0f0f0', 'borderwidth':2, 'bordercolor':'#888',
+               'bar':{'color':col, 'thickness':0.7}, 'bgcolor':'#f0f0f0', 'borderwidth':2, 'bordercolor':'#888',
                'steps':[{'range':[0,30],'color':'rgba(39,174,96,0.2)'}, {'range':[30,60],'color':'rgba(243,156,18,0.2)'}, {'range':[60,100],'color':'rgba(231,76,60,0.2)'}]}
     ))
     fig.update_layout(height=350, margin=dict(l=30,r=30,t=100,b=30), paper_bgcolor='rgba(0,0,0,0)')
@@ -561,53 +594,28 @@ def make_time_bar(r12, r36, r60, lang):
     labels = [get_text('month_12', lang), get_text('month_36', lang), get_text('month_60', lang)]
     vals = [r12*100, r36*100, r60*100]
     cols = ['#27ae60' if v<30 else ('#f39c12' if v<60 else '#e74c3c') for v in vals]
-    
-    fig = go.Figure(data=[go.Bar(
-        x=labels, y=vals, marker_color=cols,
-        text=[f'<b>{v:.1f}%</b>' for v in vals], textposition='outside',
-        textfont=dict(size=20, color='#333'), width=0.5
-    )])
-    fig.update_layout(
-        title=dict(text=f"<b>{get_text('time_risk', lang)}</b>", font=dict(size=18), x=0.5),
-        xaxis=dict(tickfont=dict(size=16, color='#333')),
-        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16),
-                  tickfont=dict(size=14), range=[0, max(vals)*1.35 if max(vals)>0 else 100], gridcolor='#e8e8e8'),
-        height=350, margin=dict(l=70,r=30,t=70,b=50), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white'
-    )
+    fig = go.Figure(data=[go.Bar(x=labels, y=vals, marker_color=cols, text=[f'<b>{v:.1f}%</b>' for v in vals], textposition='outside', textfont=dict(size=20, color='#333'), width=0.5)])
+    fig.update_layout(title=dict(text=f"<b>{get_text('time_risk', lang)}</b>", font=dict(size=18), x=0.5),
+                     xaxis=dict(tickfont=dict(size=16)), yaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), tickfont=dict(size=14), range=[0, max(vals)*1.35 if max(vals)>0 else 100], gridcolor='#e8e8e8'),
+                     height=350, margin=dict(l=70,r=30,t=70,b=50), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white')
     return fig
 
 def make_survival_chart(surv, tp, lang):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=tp, y=surv, mode='lines+markers', name=get_text('survival_prob', lang),
-        line=dict(color='#3498db', width=3), fill='tozeroy', fillcolor='rgba(52,152,219,0.15)',
-        marker=dict(size=10, color='#3498db', line=dict(width=2, color='white'))
-    ))
-    fig.update_layout(
-        title=dict(text=f"<b>{get_text('survival_curve', lang)}</b>", font=dict(size=18), x=0.5),
-        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16),
-                  tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
-        yaxis=dict(title=f"<b>{get_text('survival_prob', lang)}</b>", title_font=dict(size=16),
-                  tickfont=dict(size=14), range=[0,1.05], gridcolor='#e8e8e8', tickformat='.0%'),
-        height=350, margin=dict(l=70,r=30,t=70,b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
-    )
+    fig.add_trace(go.Scatter(x=tp, y=surv, mode='lines+markers', line=dict(color='#3498db', width=3), fill='tozeroy', fillcolor='rgba(52,152,219,0.15)', marker=dict(size=10, color='#3498db', line=dict(width=2, color='white'))))
+    fig.update_layout(title=dict(text=f"<b>{get_text('survival_curve', lang)}</b>", font=dict(size=18), x=0.5),
+                     xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
+                     yaxis=dict(title=f"<b>{get_text('survival_prob', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), range=[0,1.05], gridcolor='#e8e8e8', tickformat='.0%'),
+                     height=350, margin=dict(l=70,r=30,t=70,b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False)
     return fig
 
 def make_cumulative_chart(cif, tp, lang):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=tp, y=cif, mode='lines+markers', name=get_text('cumulative_risk_curve', lang),
-        line=dict(color='#e74c3c', width=3), fill='tozeroy', fillcolor='rgba(231,76,60,0.15)',
-        marker=dict(size=10, color='#e74c3c', symbol='square', line=dict(width=2, color='white'))
-    ))
-    fig.update_layout(
-        title=dict(text=f"<b>{get_text('cumulative_risk_curve', lang)}</b>", font=dict(size=18), x=0.5),
-        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16),
-                  tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
-        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)}</b>", title_font=dict(size=16),
-                  tickfont=dict(size=14), range=[0,1.05], gridcolor='#e8e8e8', tickformat='.0%'),
-        height=350, margin=dict(l=70,r=30,t=70,b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
-    )
+    fig.add_trace(go.Scatter(x=tp, y=cif, mode='lines+markers', line=dict(color='#e74c3c', width=3), fill='tozeroy', fillcolor='rgba(231,76,60,0.15)', marker=dict(size=10, color='#e74c3c', symbol='square', line=dict(width=2, color='white'))))
+    fig.update_layout(title=dict(text=f"<b>{get_text('cumulative_risk_curve', lang)}</b>", font=dict(size=18), x=0.5),
+                     xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
+                     yaxis=dict(title=f"<b>{get_text('risk_prob', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), range=[0,1.05], gridcolor='#e8e8e8', tickformat='.0%'),
+                     height=350, margin=dict(l=70,r=30,t=70,b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False)
     return fig
 
 def make_pie(df, lang):
@@ -615,14 +623,8 @@ def make_pie(df, lang):
     h = len(df[df[rc].str.contains('High|高', case=False, na=False)]) if rc in df.columns else 0
     m = len(df[df[rc].str.contains('Intermediate|中', case=False, na=False)]) if rc in df.columns else 0
     l = len(df) - h - m
-    fig = go.Figure(data=[go.Pie(
-        labels=[get_text('low_risk',lang), get_text('medium_risk',lang), get_text('high_risk',lang)],
-        values=[l, m, h], marker_colors=['#27ae60','#f39c12','#e74c3c'],
-        hole=0.45, textinfo='label+percent+value', textfont=dict(size=15), pull=[0, 0, 0.05]
-    )])
-    fig.update_layout(title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5),
-                     height=380, margin=dict(l=20,r=20,t=70,b=20), paper_bgcolor='rgba(0,0,0,0)',
-                     legend=dict(font=dict(size=14), orientation='h', yanchor='bottom', y=-0.12, xanchor='center', x=0.5))
+    fig = go.Figure(data=[go.Pie(labels=[get_text('low_risk',lang), get_text('medium_risk',lang), get_text('high_risk',lang)], values=[l, m, h], marker_colors=['#27ae60','#f39c12','#e74c3c'], hole=0.45, textinfo='label+percent+value', textfont=dict(size=15), pull=[0, 0, 0.05])])
+    fig.update_layout(title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5), height=380, margin=dict(l=20,r=20,t=70,b=20), paper_bgcolor='rgba(0,0,0,0)', legend=dict(font=dict(size=14), orientation='h', yanchor='bottom', y=-0.12, xanchor='center', x=0.5))
     return fig
 
 # ================== PDF生成 ==================
@@ -675,18 +677,30 @@ def num_widget(v, info, lang, pre=""):
 def main():
     models = load_models()
     
-    # 顶部栏：Logo + 语言选择
-    st.markdown(f"""
-    <div class="top-bar">
-        <div class="logo-section">
-            <img src="data:image/svg+xml;base64,{LOGO_BASE64}" alt="Logo">
-            <div class="logo-text">
-                <h2>盛京医院 Shengjing Hospital</h2>
-                <p>中国医科大学附属盛京医院</p>
+    # 顶部栏
+    if HAS_LOGO:
+        st.markdown(f"""
+        <div class="top-bar">
+            <div class="logo-section">
+                <img src="data:image/png;base64,{LOGO_BASE64}" class="logo-img" alt="Logo">
+                <div class="logo-text">
+                    <h2>盛京医院 Shengjing Hospital</h2>
+                    <p>中国医科大学附属盛京医院</p>
+                </div>
             </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="top-bar">
+            <div class="logo-section">
+                <div class="logo-text">
+                    <h2>🏥 盛京医院 Shengjing Hospital</h2>
+                    <p>中国医科大学附属盛京医院</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # 语言选择（右上角）
     col_space, col_lang = st.columns([10, 1])
@@ -694,25 +708,33 @@ def main():
         lang = LANGUAGES[st.selectbox("🌐", list(LANGUAGES.keys()), label_visibility="collapsed", key="lang")]
     
     # 医院头部
-    st.markdown(f"""
-    <div class="hospital-header">
-        <div class="header-logo">
-            <img src="data:image/svg+xml;base64,{LOGO_BASE64}" alt="Logo">
+    if HAS_LOGO:
+        st.markdown(f"""
+        <div class="hospital-header">
+            <div class="header-logo">
+                <img src="data:image/png;base64,{LOGO_BASE64}" alt="Logo">
+            </div>
+            <div class="header-text">
+                <h1>🏥 {get_text('title', lang)}</h1>
+                <p class="subtitle">{get_text('subtitle', lang)}</p>
+                <p class="hospital-name">{get_text('hospital', lang)}</p>
+            </div>
         </div>
-        <div class="header-text">
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="hospital-header-nologo">
             <h1>🏥 {get_text('title', lang)}</h1>
             <p class="subtitle">{get_text('subtitle', lang)}</p>
             <p class="hospital-name">{get_text('hospital', lang)}</p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     # 标签页
     tab1, tab2 = st.tabs([f"📋 {get_text('single_patient', lang)}", f"📊 {get_text('batch_prediction', lang)}"])
     
     # ========== 单例预测 ==========
     with tab1:
-        # 输入区域 - 三列布局（与输入一致）
         c1, c2, c3 = st.columns(3)
         data = {}
         
@@ -735,14 +757,12 @@ def main():
                 data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # 标志物 - 六列
         st.markdown(f'<div class="module-card"><div class="module-title markers">🧪 {get_text("tumor_markers", lang)}</div>', unsafe_allow_html=True)
         mc = st.columns(6)
         for i, v in enumerate(['ca125','cea','ca199','afp','ca724','he4']):
             with mc[i]: data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # 预测按钮
         st.markdown("<br>", unsafe_allow_html=True)
         bc1, bc2, bc3 = st.columns([2, 1, 2])
         with bc2:
@@ -752,11 +772,10 @@ def main():
             with st.spinner(get_text('processing', lang)):
                 res = predict(data, models)
                 
-                # ========== 结果展示 - 全宽2x2布局 ==========
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown(f'<div class="result-section"><div class="result-title">📊 {get_text("prediction_results", lang)}</div>', unsafe_allow_html=True)
                 
-                # 第一行：仪表盘 + 时间点柱状图 (各50%宽度)
+                # 2x2布局
                 row1_c1, row1_c2 = st.columns(2)
                 with row1_c1:
                     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
@@ -767,7 +786,6 @@ def main():
                     st.plotly_chart(make_time_bar(res['r12'], res['r36'], res['r60'], lang), use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                 
-                # 第二行：生存曲线 + 累积风险曲线 (各50%宽度)
                 row2_c1, row2_c2 = st.columns(2)
                 with row2_c1:
                     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
@@ -793,7 +811,7 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # 导出按钮 - 三列
+                # 导出
                 st.markdown(f"#### 📥 {get_text('export_results', lang)}")
                 ec1, ec2, ec3 = st.columns(3)
                 with ec1:
@@ -839,14 +857,12 @@ def main():
                         m = len(res_df[res_df[rc].str.contains('Intermediate|中', case=False, na=False)]) if rc in res_df.columns else 0
                         l = total - h - m
                         
-                        # 统计指标
                         m1, m2, m3, m4 = st.columns(4)
                         m1.metric(get_text('total_patients', lang), total)
                         m2.metric(get_text('high_risk_count', lang), h)
                         m3.metric(get_text('medium_risk_count', lang), m)
                         m4.metric(get_text('low_risk_count', lang), l)
                         
-                        # 图表 - 两列全宽
                         cc1, cc2 = st.columns(2)
                         with cc1:
                             st.plotly_chart(make_pie(res_df, lang), use_container_width=True)
@@ -855,13 +871,9 @@ def main():
                                 fig = go.Figure(go.Histogram(x=res_df['_r']*100, nbinsx=20, marker_color='#3498db', opacity=0.8))
                                 fig.add_vline(x=30, line_dash="dash", line_color="#27ae60", line_width=2)
                                 fig.add_vline(x=60, line_dash="dash", line_color="#e74c3c", line_width=2)
-                                fig.update_layout(title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5),
-                                                 xaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), tickfont=dict(size=14)),
-                                                 yaxis=dict(title=f"<b>{get_text('total_patients', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14)),
-                                                 height=380, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white')
+                                fig.update_layout(title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5), xaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), tickfont=dict(size=14)), yaxis=dict(title=f"<b>{get_text('total_patients', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14)), height=380, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white')
                                 st.plotly_chart(fig, use_container_width=True)
                         
-                        # 结果表格
                         disp = res_df.drop(columns=[c for c in res_df.columns if c.startswith('_')], errors='ignore')
                         def hl(row):
                             v = str(row.get(rc, ''))
@@ -870,7 +882,6 @@ def main():
                             return ['background-color:#d4edda']*len(row)
                         st.dataframe(disp.style.apply(hl, axis=1), use_container_width=True, height=350)
                         
-                        # 导出
                         st.markdown(f"#### 📥 {get_text('export_results', lang)}")
                         e1, e2, e3 = st.columns(3)
                         with e1:
@@ -883,7 +894,6 @@ def main():
                         with e3:
                             st.download_button(f"📄 {get_text('export_pdf', lang)}", make_pdf(res_df, lang), f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
                         
-                        # 高危名单
                         if h > 0:
                             st.markdown("---")
                             st.markdown(f"### ⚠️ {get_text('high_risk_attention', lang)}")
@@ -895,15 +905,28 @@ def main():
     # 页脚
     st.markdown("---")
     st.info(get_text('disclaimer', lang))
-    st.markdown(f"""
-    <div class="footer">
-        <img src="data:image/svg+xml;base64,{LOGO_BASE64}" alt="Logo">
-        <div class="footer-text">
-            <p class="hospital-name">{get_text('hospital', lang)}</p>
-            <p class="version">Cancer Recurrence Risk Prediction System v3.0</p>
+    
+    if HAS_LOGO:
+        st.markdown(f"""
+        <div class="footer">
+            <div class="footer-logo">
+                <img src="data:image/png;base64,{LOGO_BASE64}" alt="Logo">
+            </div>
+            <div class="footer-text">
+                <p class="hospital-name">{get_text('hospital', lang)}</p>
+                <p class="version">Cancer Recurrence Risk Prediction System v3.0</p>
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="footer">
+            <div class="footer-text">
+                <p class="hospital-name">🏥 {get_text('hospital', lang)}</p>
+                <p class="version">Cancer Recurrence Risk Prediction System v3.0</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
