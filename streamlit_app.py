@@ -914,7 +914,7 @@ def main():
             </div>
             <div class="footer-text">
                 <p class="hospital-name">{get_text('hospital', lang)}</p>
-                <p class="version">Cancer Recurrence Risk Prediction System v3.0</p>
+                <p class="version">Cancer Recurrence Risk Prediction System </p>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -923,7 +923,7 @@ def main():
         <div class="footer">
             <div class="footer-text">
                 <p class="hospital-name">🏥 {get_text('hospital', lang)}</p>
-                <p class="version">Cancer Recurrence Risk Prediction System v3.0</p>
+                <p class="version">Cancer Recurrence Risk Prediction System </p>
             </div>
         </div>
         """, unsafe_allow_html=True)
