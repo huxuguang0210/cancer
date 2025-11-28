@@ -424,7 +424,7 @@ INPUT_VARIABLES = {
     "he4": {"zh": "HE4", "en": "HE4", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "mild": {"zh": "轻度↑", "en": "Mild↑"}, "elevated": {"zh": "显著↑", "en": "High↑"}}}
 }
 
-# ================== 模型类 ==================
+# ================== 模型类（修复版）==================
 class DataPreprocessor:
     def __init__(self, select_k=None):
         self.scaler = StandardScaler()
@@ -514,22 +514,54 @@ class EnhancedDeepHit(nn.Module):
     def forward(self, x): 
         return torch.softmax(self.net(x), dim=1)
 
+# ========== 关键修复：完整的自编码器类（包含decoder）==========
 class EnhancedDenoisingAE(nn.Module):
+    """完整的去噪自编码器，包含encoder和decoder"""
     def __init__(self, in_dim, h=[256, 128], lat=64, drop=0.2):
         super().__init__()
-        enc, d = [], in_dim
-        for hd in h: 
-            enc.extend([nn.Linear(d, hd), nn.BatchNorm1d(hd), nn.GELU(), nn.Dropout(drop)])
+        
+        # Encoder
+        enc_layers = []
+        d = in_dim
+        for hd in h:
+            enc_layers.extend([
+                nn.Linear(d, hd),
+                nn.BatchNorm1d(hd),
+                nn.GELU(),
+                nn.Dropout(drop)
+            ])
             d = hd
-        enc.append(nn.Linear(d, lat))
-        self.encoder = nn.Sequential(*enc)
+        enc_layers.append(nn.Linear(d, lat))
+        self.encoder = nn.Sequential(*enc_layers)
+        
+        # Decoder (镜像结构)
+        dec_layers = []
+        d = lat
+        for hd in reversed(h):
+            dec_layers.extend([
+                nn.Linear(d, hd),
+                nn.BatchNorm1d(hd),
+                nn.GELU(),
+                nn.Dropout(drop)
+            ])
+            d = hd
+        dec_layers.append(nn.Linear(d, in_dim))
+        self.decoder = nn.Sequential(*dec_layers)
     
-    def encode(self, x): 
+    def encode(self, x):
         return self.encoder(x)
+    
+    def decode(self, z):
+        return self.decoder(z)
+    
+    def forward(self, x):
+        z = self.encode(x)
+        return self.decode(z), z
 
 class EnhancedTransformer(nn.Module):
     def __init__(self, lat, n_h=4, ff=256, n_l=2, drop=0.1):
         super().__init__()
+        # 确保lat能被n_h整除
         while lat % n_h != 0 and n_h > 1: 
             n_h -= 1
         self.norm = nn.LayerNorm(lat)
@@ -632,21 +664,24 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             fused = lat * 2
             load_log.append(f"  📊 潜在维度: {lat}, 融合维度: {fused}")
             
-            # 加载各个模型
-            ae = EnhancedDenoisingAE(
-                in_dim, 
-                [params.get('ae_h1', 256), params.get('ae_h2', 128)], 
-                lat
-            )
+            # 获取隐藏层参数
+            ae_h1 = params.get('ae_h1', 256)
+            ae_h2 = params.get('ae_h2', 128)
+            load_log.append(f"  📊 AE隐藏层: [{ae_h1}, {ae_h2}]")
+            
+            # 加载自编码器（使用修复后的完整类）
+            ae = EnhancedDenoisingAE(in_dim, [ae_h1, ae_h2], lat)
             ae.load_state_dict(torch.load(os.path.join(model_dir, "model_ae.pt"), map_location=device))
             ae.eval()
-            load_log.append("  ✅ AutoEncoder 加载成功")
+            load_log.append("  ✅ AutoEncoder 加载成功（包含encoder+decoder）")
             
+            # 加载Transformer
             trans = EnhancedTransformer(lat)
             trans.load_state_dict(torch.load(os.path.join(model_dir, "model_trans.pt"), map_location=device))
             trans.eval()
             load_log.append("  ✅ Transformer 加载成功")
             
+            # 加载DeepSurv
             ds = EnhancedDeepSurv(
                 fused, 
                 [params.get('ds_h1', 256), params.get('ds_h2', 128), params.get('ds_h3', 64)], 
@@ -656,6 +691,7 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             ds.eval()
             load_log.append("  ✅ DeepSurv 加载成功")
             
+            # 加载DeepHit
             dh = EnhancedDeepHit(
                 fused, 
                 [params.get('dh_h1', 256), params.get('dh_h2', 128)], 
@@ -665,6 +701,7 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             dh.eval()
             load_log.append("  ✅ DeepHit 加载成功")
             
+            # 加载Fusion
             fusion = LearnableFusion()
             fusion.load_state_dict(torch.load(os.path.join(model_dir, "model_fusion.pt"), map_location=device))
             fusion.eval()
@@ -1147,11 +1184,7 @@ def main():
             st.warning("""
             **解决方法 | Solution:**
             1. 确保 `results_clinical_enhanced_v3/` 目录存在于程序同一目录
-            2. 确保该目录包含所有必需的模型文件：
-               - `model_ae.pt`, `model_trans.pt`, `model_deepsurv.pt`
-               - `model_deephit.pt`, `model_fusion.pt`
-               - `preprocessor.joblib`, `time_cuts.npy`, `ds_min_max.npy`
-               - `best_parameters.json`
+            2. 确保该目录包含所有必需的模型文件
             3. 如果没有训练好的模型，请先运行模型训练脚本
             """)
     
