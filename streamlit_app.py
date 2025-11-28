@@ -208,59 +208,59 @@ TRANSLATIONS = {
         "zh": "风险分布",
         "en": "Risk Distribution"
     },
+    "processing": {
+        "zh": "处理中...",
+        "en": "Processing..."
+    },
+    "complete": {
+        "zh": "完成",
+        "en": "Complete"
+    },
     "advice_low": {
         "zh": """
-        - 建议常规随访，每6个月复查一次
-        - 保持健康生活方式
-        - 定期监测肿瘤标志物
+- 建议常规随访，每6个月复查一次
+- 保持健康生活方式
+- 定期监测肿瘤标志物
         """,
         "en": """
-        - Recommend routine follow-up every 6 months
-        - Maintain healthy lifestyle
-        - Regular monitoring of tumor markers
+- Recommend routine follow-up every 6 months
+- Maintain healthy lifestyle
+- Regular monitoring of tumor markers
         """
     },
     "advice_medium": {
         "zh": """
-        - 建议加强随访，每3-4个月复查一次
-        - 考虑辅助化疗或其他辅助治疗
-        - 密切监测肿瘤标志物变化
-        - 影像学检查频率增加
+- 建议加强随访，每3-4个月复查一次
+- 考虑辅助化疗或其他辅助治疗
+- 密切监测肿瘤标志物变化
+- 影像学检查频率增加
         """,
         "en": """
-        - Recommend enhanced follow-up every 3-4 months
-        - Consider adjuvant chemotherapy or other treatments
-        - Close monitoring of tumor marker changes
-        - Increased frequency of imaging examinations
+- Recommend enhanced follow-up every 3-4 months
+- Consider adjuvant chemotherapy or other treatments
+- Close monitoring of tumor marker changes
+- Increased frequency of imaging examinations
         """
     },
     "advice_high": {
         "zh": """
-        - 强烈建议密切随访，每2-3个月复查一次
-        - 建议进行辅助化疗
-        - 考虑多学科会诊(MDT)
-        - 密切监测复发迹象
-        - 可考虑临床试验
+- 强烈建议密切随访，每2-3个月复查一次
+- 建议进行辅助化疗
+- 考虑多学科会诊(MDT)
+- 密切监测复发迹象
+- 可考虑临床试验
         """,
         "en": """
-        - Strongly recommend close follow-up every 2-3 months
-        - Recommend adjuvant chemotherapy
-        - Consider multidisciplinary team (MDT) consultation
-        - Close monitoring for recurrence signs
-        - Consider clinical trials
+- Strongly recommend close follow-up every 2-3 months
+- Recommend adjuvant chemotherapy
+- Consider multidisciplinary team (MDT) consultation
+- Close monitoring for recurrence signs
+- Consider clinical trials
         """
-    },
-    "select_option": {
-        "zh": "请选择",
-        "en": "Please select"
-    },
-    "input_value": {
-        "zh": "请输入数值",
-        "en": "Enter value"
     }
 }
 
-# 输入变量配置 - 增强版（带选项翻译）
+# 输入变量配置
 INPUT_VARIABLES = {
     "age": {
         "zh": "年龄", 
@@ -620,9 +620,9 @@ class SEBlock(nn.Module):
     def __init__(self, dim, reduction=4):
         super().__init__()
         self.fc = nn.Sequential(
-            nn.Linear(dim, dim // reduction),
+            nn.Linear(dim, max(dim // reduction, 1)),
             nn.ReLU(),
-            nn.Linear(dim // reduction, dim),
+            nn.Linear(max(dim // reduction, 1), dim),
             nn.Sigmoid()
         )
     
@@ -839,7 +839,7 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
         
         # 确定输入维度
         input_dim = preprocessor.scaler.n_features_in_
-        if preprocessor.selector is not None:
+        if hasattr(preprocessor, 'selector') and preprocessor.selector is not None:
             input_dim = preprocessor.selector.k
         
         latent_dim = params.get('ae_latent', 64)
@@ -881,7 +881,7 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
         }
         
     except Exception as e:
-        st.warning(f"模型加载失败: {e}")
+        st.warning(f"Model loading failed: {e}")
         demo_mode = True
         
         # 演示模式
@@ -1052,10 +1052,7 @@ def create_template_csv(lang: str) -> pd.DataFrame:
         col_name = var_info['en'] if lang == 'en' else var_info['zh']
         columns.append(col_name)
     
-    # 创建示例数据
-    sample_data = {
-        columns[0]: [1, 2, 3]
-    }
+    sample_data = {columns[0]: [1, 2, 3]}
     
     for i, (var_name, var_info) in enumerate(INPUT_VARIABLES.items()):
         col_name = columns[i + 1]
@@ -1074,12 +1071,11 @@ class PDFReport(FPDF):
     def __init__(self, lang='zh'):
         super().__init__()
         self.lang = lang
-        # 使用内置字体，避免中文字体问题
         self.add_page()
         
     def header(self):
         self.set_font('Helvetica', 'B', 16)
-        title = "Cancer Recurrence Risk Prediction Report" if self.lang == 'en' else "Cancer Recurrence Risk Report"
+        title = "Cancer Recurrence Risk Prediction Report"
         self.cell(0, 10, title, 0, 1, 'C')
         self.ln(5)
         
@@ -1094,16 +1090,12 @@ def generate_pdf_report(results_df: pd.DataFrame, lang: str) -> bytes:
     pdf = PDFReport(lang)
     pdf.set_font('Helvetica', '', 10)
     
-    # 标题
     pdf.set_font('Helvetica', 'B', 14)
-    title = "Batch Prediction Results" if lang == 'en' else "Batch Prediction Results"
-    pdf.cell(0, 10, title, 0, 1, 'L')
+    pdf.cell(0, 10, "Batch Prediction Results", 0, 1, 'L')
     pdf.ln(5)
     
-    # 摘要统计
     pdf.set_font('Helvetica', 'B', 12)
-    summary_title = "Summary Statistics" if lang == 'en' else "Summary Statistics"
-    pdf.cell(0, 10, summary_title, 0, 1, 'L')
+    pdf.cell(0, 10, "Summary Statistics", 0, 1, 'L')
     
     pdf.set_font('Helvetica', '', 10)
     
@@ -1123,35 +1115,28 @@ def generate_pdf_report(results_df: pd.DataFrame, lang: str) -> bytes:
     pdf.cell(0, 8, f"Low Risk: {low_risk} ({low_risk/total*100:.1f}%)" if total > 0 else "Low Risk: 0", 0, 1)
     pdf.ln(10)
     
-    # 详细结果表格
     pdf.set_font('Helvetica', 'B', 12)
-    detail_title = "Detailed Results" if lang == 'en' else "Detailed Results"
-    pdf.cell(0, 10, detail_title, 0, 1, 'L')
+    pdf.cell(0, 10, "Detailed Results", 0, 1, 'L')
     
-    # 表格头
     pdf.set_font('Helvetica', 'B', 8)
     display_cols = [col for col in results_df.columns if not col.startswith('_')]
     
-    col_width = 190 / len(display_cols)
-    for col in display_cols:
+    col_width = 190 / min(len(display_cols), 6)
+    for col in display_cols[:6]:
         pdf.cell(col_width, 8, str(col)[:15], 1, 0, 'C')
     pdf.ln()
     
-    # 表格数据
     pdf.set_font('Helvetica', '', 8)
-    for _, row in results_df.head(50).iterrows():  # 限制50行
-        for col in display_cols:
+    for _, row in results_df.head(50).iterrows():
+        for col in display_cols[:6]:
             value = str(row[col])[:15] if col in row else ""
             pdf.cell(col_width, 6, value, 1, 0, 'C')
         pdf.ln()
     
-    # 免责声明
     pdf.ln(10)
     pdf.set_font('Helvetica', 'I', 8)
-    disclaimer = "Disclaimer: This report is for reference only and cannot replace professional medical diagnosis."
-    pdf.multi_cell(0, 5, disclaimer)
+    pdf.multi_cell(0, 5, "Disclaimer: This report is for reference only.")
     
-    # 生成时间
     pdf.ln(5)
     pdf.cell(0, 5, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1)
     
@@ -1163,10 +1148,8 @@ def generate_single_pdf_report(patient_data: Dict, results: Dict, lang: str) -> 
     pdf = PDFReport(lang)
     pdf.set_font('Helvetica', '', 10)
     
-    # 患者信息
     pdf.set_font('Helvetica', 'B', 14)
-    info_title = "Patient Information" if lang == 'en' else "Patient Information"
-    pdf.cell(0, 10, info_title, 0, 1, 'L')
+    pdf.cell(0, 10, "Patient Information", 0, 1, 'L')
     
     pdf.set_font('Helvetica', '', 10)
     for var_name, value in patient_data.items():
@@ -1183,20 +1166,13 @@ def generate_single_pdf_report(patient_data: Dict, results: Dict, lang: str) -> 
     
     pdf.ln(10)
     
-    # 预测结果
     pdf.set_font('Helvetica', 'B', 14)
-    result_title = "Prediction Results" if lang == 'en' else "Prediction Results"
-    pdf.cell(0, 10, result_title, 0, 1, 'L')
+    pdf.cell(0, 10, "Prediction Results", 0, 1, 'L')
     
     pdf.set_font('Helvetica', '', 12)
     
     risk = results['final_risk']
-    if risk < 0.3:
-        risk_level = "Low Risk" if lang == 'en' else "Low Risk"
-    elif risk < 0.6:
-        risk_level = "Medium Risk" if lang == 'en' else "Medium Risk"
-    else:
-        risk_level = "High Risk" if lang == 'en' else "High Risk"
+    risk_level = "Low Risk" if risk < 0.3 else ("Medium Risk" if risk < 0.6 else "High Risk")
     
     pdf.cell(0, 8, f"Overall Risk: {risk*100:.1f}%", 0, 1)
     pdf.cell(0, 8, f"Risk Level: {risk_level}", 0, 1)
@@ -1204,11 +1180,9 @@ def generate_single_pdf_report(patient_data: Dict, results: Dict, lang: str) -> 
     pdf.cell(0, 8, f"36-month Risk: {results['risk_36m']*100:.1f}%", 0, 1)
     pdf.cell(0, 8, f"60-month Risk: {results['risk_60m']*100:.1f}%", 0, 1)
     
-    # 免责声明
     pdf.ln(10)
     pdf.set_font('Helvetica', 'I', 8)
-    disclaimer = "Disclaimer: This report is for reference only and cannot replace professional medical diagnosis."
-    pdf.multi_cell(0, 5, disclaimer)
+    pdf.multi_cell(0, 5, "Disclaimer: This report is for reference only.")
     
     pdf.ln(5)
     pdf.cell(0, 5, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1)
@@ -1365,7 +1339,6 @@ def render_select_widget(var_name: str, var_info: Dict, lang: str, key_prefix: s
     options = var_info.get('options', {})
     option_keys = list(options.keys())
     
-    # 创建显示标签
     format_func = lambda x: f"{options[x]['zh']} / {options[x]['en']}" if lang == "zh" else f"{options[x]['en']} / {options[x]['zh']}"
     
     selected = st.selectbox(
@@ -1416,7 +1389,7 @@ def main():
         
         **Models / 模型:**
         - DeepSurv
-        - DeepHit
+        - DeepHit  
         - Autoencoder + Transformer
         
         **Version / 版本:** 3.0
@@ -1512,7 +1485,7 @@ def main():
             )
         
         if predict_clicked:
-            with st.spinner("Predicting... / 预测中..."):
+            with st.spinner(get_text("processing", lang)):
                 results = predict_single(input_data, models, demo_mode)
                 
                 st.markdown("---")
@@ -1563,10 +1536,10 @@ def main():
                 
                 # 导出按钮
                 st.markdown("---")
+                st.subheader("📥 Export / 导出")
                 export_col1, export_col2 = st.columns(2)
                 
                 with export_col1:
-                    # 导出Excel
                     detail_df = pd.DataFrame({
                         'Metric': ['Final Risk', 'DeepSurv Risk', 'DeepHit Risk', 
                                   '12-month Risk', '36-month Risk', '60-month Risk'],
@@ -1591,7 +1564,6 @@ def main():
                     )
                 
                 with export_col2:
-                    # 导出PDF
                     pdf_data = generate_single_pdf_report(input_data, results, lang)
                     st.download_button(
                         label=f"📄 {get_text('export_pdf', lang)}",
@@ -1619,7 +1591,6 @@ def main():
             mime="text/csv"
         )
         
-        # 预览模板
         with st.expander("Preview Template / 预览模板"):
             st.dataframe(template_df, use_container_width=True)
         
@@ -1647,4 +1618,187 @@ def main():
                 
                 # 批量预测按钮
                 if st.button(get_text("predict_button", lang), type="primary", key="batch_predict"):
-                    with st.spinner("Processing... / 处理中..."):
+                    with st.spinner(get_text("processing", lang)):
+                        results_df = predict_batch(df, models, demo_mode, lang)
+                        
+                        st.markdown("---")
+                        st.header(get_text("batch_results", lang))
+                        
+                        # 统计摘要
+                        summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
+                        
+                        total = len(results_df)
+                        risk_col = get_text("risk_level", lang)
+                        
+                        if risk_col in results_df.columns:
+                            high_count = len(results_df[results_df[risk_col].str.contains('High|高', case=False, na=False)])
+                            medium_count = len(results_df[results_df[risk_col].str.contains('Medium|中', case=False, na=False)])
+                            low_count = len(results_df[results_df[risk_col].str.contains('Low|低', case=False, na=False)])
+                        else:
+                            high_count = medium_count = low_count = 0
+                        
+                        with summary_col1:
+                            st.metric(get_text("total_patients", lang), total)
+                        with summary_col2:
+                            st.metric(get_text("high_risk_count", lang), high_count, delta=None)
+                        with summary_col3:
+                            st.metric(get_text("medium_risk_count", lang), medium_count, delta=None)
+                        with summary_col4:
+                            st.metric(get_text("low_risk_count", lang), low_count, delta=None)
+                        
+                                                # 风险分布图
+                        chart_col1, chart_col2 = st.columns(2)
+                        
+                        with chart_col1:
+                            pie_fig = create_risk_distribution_chart(results_df, lang)
+                            st.plotly_chart(pie_fig, use_container_width=True)
+                        
+                        with chart_col2:
+                            # 风险分数分布直方图
+                            if '_final_risk_value' in results_df.columns:
+                                risk_values = results_df['_final_risk_value'].values * 100
+                                
+                                hist_fig = go.Figure(data=[
+                                    go.Histogram(
+                                        x=risk_values,
+                                        nbinsx=20,
+                                        marker_color='steelblue',
+                                        opacity=0.75
+                                    )
+                                ])
+                                
+                                hist_fig.add_vline(x=30, line_dash="dash", line_color="green", 
+                                                   annotation_text="Low/Medium" if lang == 'en' else "低/中")
+                                hist_fig.add_vline(x=60, line_dash="dash", line_color="red",
+                                                   annotation_text="Medium/High" if lang == 'en' else "中/高")
+                                
+                                hist_fig.update_layout(
+                                    title="Risk Score Distribution" if lang == 'en' else "风险分数分布",
+                                    xaxis_title="Risk Score (%)" if lang == 'en' else "风险分数 (%)",
+                                    yaxis_title="Count" if lang == 'en' else "患者数量",
+                                    height=400
+                                )
+                                
+                                st.plotly_chart(hist_fig, use_container_width=True)
+                        
+                        # 显示结果表格
+                        st.subheader("📋 " + ("Detailed Results" if lang == 'en' else "详细结果"))
+                        
+                        # 移除内部使用的列
+                        display_df = results_df.drop(columns=[col for col in results_df.columns if col.startswith('_')], errors='ignore')
+                        
+                        # 添加颜色标记
+                        def highlight_risk(row):
+                            risk_col = get_text("risk_level", lang)
+                            if risk_col in row:
+                                risk_val = row[risk_col]
+                                if 'High' in str(risk_val) or '高' in str(risk_val):
+                                    return ['background-color: #ffcccc'] * len(row)
+                                elif 'Medium' in str(risk_val) or '中' in str(risk_val):
+                                    return ['background-color: #fff3cd'] * len(row)
+                                else:
+                                    return ['background-color: #d4edda'] * len(row)
+                            return [''] * len(row)
+                        
+                        styled_df = display_df.style.apply(highlight_risk, axis=1)
+                        st.dataframe(styled_df, use_container_width=True, height=400)
+                        
+                        # 导出选项
+                        st.markdown("---")
+                        st.subheader("📥 " + ("Export Results" if lang == 'en' else "导出结果"))
+                        
+                        export_col1, export_col2, export_col3 = st.columns(3)
+                        
+                        with export_col1:
+                            # 导出 CSV
+                            csv_export = io.StringIO()
+                            display_df.to_csv(csv_export, index=False, encoding='utf-8-sig')
+                            csv_export_data = csv_export.getvalue()
+                            
+                            st.download_button(
+                                label="📥 " + ("Export CSV" if lang == 'en' else "导出CSV"),
+                                data=csv_export_data,
+                                file_name=f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                mime="text/csv"
+                            )
+                        
+                        with export_col2:
+                            # 导出 Excel
+                            excel_buffer = io.BytesIO()
+                            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                                display_df.to_excel(writer, sheet_name='Prediction Results', index=False)
+                                
+                                # 添加摘要sheet
+                                summary_data = {
+                                    'Metric': [
+                                        get_text("total_patients", lang),
+                                        get_text("high_risk_count", lang),
+                                        get_text("medium_risk_count", lang),
+                                        get_text("low_risk_count", lang)
+                                    ],
+                                    'Value': [total, high_count, medium_count, low_count]
+                                }
+                                summary_df = pd.DataFrame(summary_data)
+                                summary_df.to_excel(writer, sheet_name='Summary', index=False)
+                            
+                            excel_export_data = excel_buffer.getvalue()
+                            
+                            st.download_button(
+                                label=f"📥 {get_text('export_excel', lang)}",
+                                data=excel_export_data,
+                                file_name=f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                        
+                        with export_col3:
+                            # 导出 PDF
+                            pdf_data = generate_pdf_report(results_df, lang)
+                            st.download_button(
+                                label=f"📄 {get_text('export_pdf', lang)}",
+                                data=pdf_data,
+                                file_name=f"batch_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                                mime="application/pdf"
+                            )
+                        
+                        # 高风险患者列表
+                        if high_count > 0:
+                            st.markdown("---")
+                            st.subheader("⚠️ " + ("High Risk Patients Requiring Attention" if lang == 'en' else "需关注的高风险患者"))
+                            
+                            risk_col = get_text("risk_level", lang)
+                            high_risk_df = display_df[display_df[risk_col].str.contains('High|高', case=False, na=False)]
+                            
+                            st.dataframe(
+                                high_risk_df.style.apply(lambda x: ['background-color: #ffcccc'] * len(x), axis=1),
+                                use_container_width=True
+                            )
+                            
+                            st.warning(
+                                f"⚠️ {high_count} " + 
+                                ("patients are classified as high risk and require close follow-up!" if lang == 'en' 
+                                 else "位患者被评估为高风险，需要密切随访！")
+                            )
+                
+            except Exception as e:
+                st.error(f"Error processing file / 文件处理错误: {str(e)}")
+                st.info("Please ensure your file format matches the template. / 请确保您的文件格式与模板一致。")
+    
+    # 页脚免责声明
+    st.markdown("---")
+    st.info(get_text("disclaimer", lang))
+    
+    # 页脚信息
+    st.markdown(
+        """
+        <div style='text-align: center; color: gray; padding: 20px;'>
+            <p>Cancer Recurrence Risk Prediction System v3.0</p>
+            <p>肿瘤复发风险预测系统 v3.0</p>
+            <p>© 2024 Medical AI Research</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+if __name__ == "__main__":
+    main()
