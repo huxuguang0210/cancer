@@ -3,6 +3,7 @@ Streamlit Web Application for Cancer Recurrence Prediction
 肿瘤复发预测网页应用
 ===========================================================
 中国医科大学附属盛京医院
+Shengjing Hospital of China Medical University
 """
 
 import streamlit as st
@@ -13,6 +14,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+import joblib
+import json
 import io
 import base64
 from datetime import datetime
@@ -21,14 +24,13 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-import tempfile
 import os
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import SelectKBest, f_classif
 
 # ================== 页面配置 ==================
 st.set_page_config(
-    page_title="肿瘤复发预测系统 - 盛京医院",
+    page_title="Cancer Recurrence Prediction | 肿瘤复发预测 - 盛京医院",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -49,348 +51,634 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ================== 文本配置 ==================
-TEXTS = {
-    "title": "🏥 肿瘤复发风险预测系统",
-    "subtitle": "基于深度学习的个体化预测模型",
-    "hospital": "中国医科大学附属盛京医院",
-    "patient_info": "📋 患者信息录入",
-    "single_patient": "单个患者预测",
-    "batch_prediction": "批量患者预测",
-    "basic_info": "基本信息",
-    "surgical_info": "手术信息",
-    "pathology_info": "病理信息",
-    "tumor_markers": "肿瘤标志物",
-    "predict_button": "🔮 开始预测",
-    "prediction_results": "📊 预测结果",
-    "overall_risk": "总体复发风险",
-    "risk_level": "风险等级",
-    "low_risk": "低风险",
-    "medium_risk": "中等风险",
-    "high_risk": "高风险",
-    "survival_curve": "生存曲线预测",
-    "time_risk": "时间点复发风险",
-    "clinical_advice": "临床建议",
-    "disclaimer": "⚠️ 免责声明：本系统仅供临床参考，不能替代专业医生的诊断。请结合临床实际情况综合判断。",
-    "months": "个月",
-    "probability": "概率",
-    "time": "时间",
-    "survival_probability": "生存概率",
-    "cumulative_risk": "累积复发风险",
-    "upload_csv": "上传CSV文件",
-    "download_template": "下载模板",
-    "batch_results": "批量预测结果",
-    "export_excel": "导出Excel",
-    "export_pdf": "导出PDF报告",
-    "patient_id": "患者ID",
-    "total_patients": "总患者数",
-    "high_risk_count": "高风险患者",
-    "medium_risk_count": "中风险患者",
-    "low_risk_count": "低风险患者",
-    "risk_distribution": "风险分布",
-    "processing": "处理中...",
-    "advice_low": """
+# ================== 语言配置 ==================
+LANGUAGES = {
+    "中文": "zh",
+    "English": "en"
+}
+
+# 翻译字典
+TRANSLATIONS = {
+    "title": {
+        "zh": "🏥 肿瘤复发风险预测系统",
+        "en": "🏥 Cancer Recurrence Risk Prediction System"
+    },
+    "subtitle": {
+        "zh": "基于深度学习的个体化预测模型",
+        "en": "Deep Learning-Based Personalized Prediction Model"
+    },
+    "hospital": {
+        "zh": "中国医科大学附属盛京医院",
+        "en": "Shengjing Hospital of China Medical University"
+    },
+    "patient_info": {
+        "zh": "📋 患者信息录入",
+        "en": "📋 Patient Information Entry"
+    },
+    "single_patient": {
+        "zh": "单个患者预测",
+        "en": "Single Patient Prediction"
+    },
+    "batch_prediction": {
+        "zh": "批量患者预测",
+        "en": "Batch Patient Prediction"
+    },
+    "basic_info": {
+        "zh": "基本信息",
+        "en": "Basic Information"
+    },
+    "surgical_info": {
+        "zh": "手术信息",
+        "en": "Surgical Information"
+    },
+    "pathology_info": {
+        "zh": "病理信息",
+        "en": "Pathology Information"
+    },
+    "tumor_markers": {
+        "zh": "肿瘤标志物",
+        "en": "Tumor Markers"
+    },
+    "predict_button": {
+        "zh": "🔮 开始预测",
+        "en": "🔮 Start Prediction"
+    },
+    "prediction_results": {
+        "zh": "📊 预测结果",
+        "en": "📊 Prediction Results"
+    },
+    "overall_risk": {
+        "zh": "总体复发风险",
+        "en": "Overall Recurrence Risk"
+    },
+    "risk_level": {
+        "zh": "风险等级",
+        "en": "Risk Level"
+    },
+    "low_risk": {
+        "zh": "低风险",
+        "en": "Low Risk"
+    },
+    "medium_risk": {
+        "zh": "中等风险",
+        "en": "Medium Risk"
+    },
+    "high_risk": {
+        "zh": "高风险",
+        "en": "High Risk"
+    },
+    "survival_curve": {
+        "zh": "生存曲线预测",
+        "en": "Survival Curve Prediction"
+    },
+    "time_risk": {
+        "zh": "时间点复发风险",
+        "en": "Time-Point Recurrence Risk"
+    },
+    "clinical_advice": {
+        "zh": "临床建议",
+        "en": "Clinical Recommendations"
+    },
+    "disclaimer": {
+        "zh": "⚠️ 免责声明：本系统仅供临床参考，不能替代专业医生的诊断。请结合临床实际情况综合判断。",
+        "en": "⚠️ Disclaimer: This system is for clinical reference only and cannot replace professional medical diagnosis."
+    },
+    "months": {
+        "zh": "个月",
+        "en": " months"
+    },
+    "probability": {
+        "zh": "概率",
+        "en": "Probability"
+    },
+    "time": {
+        "zh": "时间",
+        "en": "Time"
+    },
+    "survival_probability": {
+        "zh": "生存概率",
+        "en": "Survival Probability"
+    },
+    "cumulative_risk": {
+        "zh": "累积复发风险",
+        "en": "Cumulative Recurrence Risk"
+    },
+    "upload_csv": {
+        "zh": "上传CSV文件",
+        "en": "Upload CSV File"
+    },
+    "download_template": {
+        "zh": "下载模板",
+        "en": "Download Template"
+    },
+    "batch_results": {
+        "zh": "批量预测结果",
+        "en": "Batch Prediction Results"
+    },
+    "export_excel": {
+        "zh": "导出Excel",
+        "en": "Export Excel"
+    },
+    "export_pdf": {
+        "zh": "导出PDF报告",
+        "en": "Export PDF Report"
+    },
+    "patient_id": {
+        "zh": "患者ID",
+        "en": "Patient ID"
+    },
+    "total_patients": {
+        "zh": "总患者数",
+        "en": "Total Patients"
+    },
+    "high_risk_count": {
+        "zh": "高风险患者",
+        "en": "High Risk Patients"
+    },
+    "medium_risk_count": {
+        "zh": "中风险患者",
+        "en": "Medium Risk Patients"
+    },
+    "low_risk_count": {
+        "zh": "低风险患者",
+        "en": "Low Risk Patients"
+    },
+    "risk_distribution": {
+        "zh": "风险分布",
+        "en": "Risk Distribution"
+    },
+    "processing": {
+        "zh": "处理中...",
+        "en": "Processing..."
+    },
+    "export_results": {
+        "zh": "导出结果",
+        "en": "Export Results"
+    },
+    "export_csv": {
+        "zh": "导出CSV",
+        "en": "Export CSV"
+    },
+    "detailed_results": {
+        "zh": "详细结果",
+        "en": "Detailed Results"
+    },
+    "high_risk_attention": {
+        "zh": "需关注的高风险患者",
+        "en": "High Risk Patients Requiring Attention"
+    },
+    "high_risk_warning": {
+        "zh": "位患者被评估为高风险，需要密切随访！",
+        "en": "patients are classified as high risk and require close follow-up!"
+    },
+    "preview_template": {
+        "zh": "预览模板",
+        "en": "Preview Template"
+    },
+    "preview_data": {
+        "zh": "预览数据",
+        "en": "Preview Data"
+    },
+    "loaded_patients": {
+        "zh": "已加载患者数据",
+        "en": "Loaded patient data"
+    },
+    "file_error": {
+        "zh": "文件处理错误",
+        "en": "File processing error"
+    },
+    "file_format_hint": {
+        "zh": "请确保您的文件格式与模板一致。",
+        "en": "Please ensure your file format matches the template."
+    },
+    "advice_low": {
+        "zh": """
 - 建议常规随访，每6个月复查一次
 - 保持健康生活方式
 - 定期监测肿瘤标志物
-    """,
-    "advice_medium": """
+        """,
+        "en": """
+- Recommend routine follow-up every 6 months
+- Maintain healthy lifestyle
+- Regular monitoring of tumor markers
+        """
+    },
+    "advice_medium": {
+        "zh": """
 - 建议加强随访，每3-4个月复查一次
 - 考虑辅助化疗或其他辅助治疗
 - 密切监测肿瘤标志物变化
 - 影像学检查频率增加
-    """,
-    "advice_high": """
+        """,
+        "en": """
+- Recommend enhanced follow-up every 3-4 months
+- Consider adjuvant chemotherapy or other treatments
+- Close monitoring of tumor marker changes
+- Increased frequency of imaging examinations
+        """
+    },
+    "advice_high": {
+        "zh": """
 - 强烈建议密切随访，每2-3个月复查一次
 - 建议进行辅助化疗
 - 考虑多学科会诊(MDT)
 - 密切监测复发迹象
 - 可考虑临床试验
-    """
+        """,
+        "en": """
+- Strongly recommend close follow-up every 2-3 months
+- Recommend adjuvant chemotherapy
+- Consider multidisciplinary team (MDT) consultation
+- Close monitoring for recurrence signs
+- Consider clinical trials
+        """
+    }
 }
 
 # 输入变量配置
 INPUT_VARIABLES = {
     "age": {
-        "label": "年龄",
+        "zh": "年龄", 
+        "en": "Age", 
         "type": "number", 
         "min": 18, 
         "max": 100, 
         "default": 50,
-        "unit": "岁"
+        "unit": {"zh": "岁", "en": "years"}
     },
     "family_cancer_history": {
-        "label": "家族史",
-        "type": "select", 
-        "options": {"no": "无", "yes": "有"}
-    },
-    "sexual_history": {
-        "label": "性生活史",
-        "type": "select", 
-        "options": {"no": "无", "yes": "有"}
-    },
-    "parity": {
-        "label": "生育次数",
-        "type": "select",
-        "options": {"0": "0次", "1": "1次", "2": "2次", "3": "3次及以上"}
-    },
-    "menopausal_status": {
-        "label": "绝经状态",
-        "type": "select", 
-        "options": {"premenopausal": "未绝经", "postmenopausal": "已绝经"}
-    },
-    "comorbidities": {
-        "label": "内科疾病",
+        "zh": "家族史", 
+        "en": "Family Cancer History", 
         "type": "select", 
         "options": {
-            "no": "无",
-            "hypertension": "高血压",
-            "diabetes": "糖尿病",
-            "cardiovascular": "心血管疾病",
-            "multiple": "多种疾病"
+            "no": {"zh": "无", "en": "No"},
+            "yes": {"zh": "有", "en": "Yes"}
+        }
+    },
+    "sexual_history": {
+        "zh": "性生活史", 
+        "en": "Sexual History", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "无", "en": "No"},
+            "yes": {"zh": "有", "en": "Yes"}
+        }
+    },
+    "parity": {
+        "zh": "生育次数", 
+        "en": "Parity", 
+        "type": "select",
+        "options": {
+            "0": {"zh": "0次", "en": "0"},
+            "1": {"zh": "1次", "en": "1"},
+            "2": {"zh": "2次", "en": "2"},
+            "3": {"zh": "3次及以上", "en": "3 or more"}
+        }
+    },
+    "menopausal_status": {
+        "zh": "绝经状态", 
+        "en": "Menopausal Status", 
+        "type": "select", 
+        "options": {
+            "premenopausal": {"zh": "未绝经", "en": "Premenopausal"},
+            "postmenopausal": {"zh": "已绝经", "en": "Postmenopausal"}
+        }
+    },
+    "comorbidities": {
+        "zh": "内科疾病", 
+        "en": "Comorbidities", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "无", "en": "None"},
+            "hypertension": {"zh": "高血压", "en": "Hypertension"},
+            "diabetes": {"zh": "糖尿病", "en": "Diabetes"},
+            "cardiovascular": {"zh": "心血管疾病", "en": "Cardiovascular"},
+            "multiple": {"zh": "多种疾病", "en": "Multiple"}
         }
     },
     "presenting_symptom": {
-        "label": "症状",
+        "zh": "症状", 
+        "en": "Presenting Symptom", 
         "type": "select", 
         "options": {
-            "asymptomatic": "无症状",
-            "abdominal_pain": "腹痛",
-            "bloating": "腹胀",
-            "mass": "包块",
-            "bleeding": "异常出血",
-            "other": "其他"
+            "asymptomatic": {"zh": "无症状", "en": "Asymptomatic"},
+            "abdominal_pain": {"zh": "腹痛", "en": "Abdominal Pain"},
+            "bloating": {"zh": "腹胀", "en": "Bloating"},
+            "mass": {"zh": "包块", "en": "Mass"},
+            "bleeding": {"zh": "异常出血", "en": "Abnormal Bleeding"},
+            "other": {"zh": "其他", "en": "Other"}
         }
     },
     "surgical_route": {
-        "label": "手术方式",
+        "zh": "手术方式", 
+        "en": "Surgical Route", 
         "type": "select", 
         "options": {
-            "laparoscopy": "腹腔镜",
-            "laparotomy": "开腹手术",
-            "robotic": "机器人辅助",
-            "conversion": "中转开腹"
+            "laparoscopy": {"zh": "腹腔镜", "en": "Laparoscopy"},
+            "laparotomy": {"zh": "开腹手术", "en": "Laparotomy"},
+            "robotic": {"zh": "机器人辅助", "en": "Robotic"},
+            "conversion": {"zh": "中转开腹", "en": "Conversion"}
         }
     },
     "tumor_envelope_integrity": {
-        "label": "肿物破裂",
+        "zh": "肿物破裂", 
+        "en": "Tumor Envelope Integrity", 
         "type": "select", 
         "options": {
-            "intact": "完整",
-            "ruptured_before": "术前破裂",
-            "ruptured_during": "术中破裂"
+            "intact": {"zh": "完整", "en": "Intact"},
+            "ruptured_before": {"zh": "术前破裂", "en": "Ruptured Before Surgery"},
+            "ruptured_during": {"zh": "术中破裂", "en": "Ruptured During Surgery"}
         }
     },
     "fertility_sparing_surgery": {
-        "label": "保留生育功能",
-        "type": "select", 
-        "options": {"no": "否", "yes": "是"}
-    },
-    "completeness_of_surgery": {
-        "label": "全面分期",
-        "type": "select", 
-        "options": {"incomplete": "不完全", "complete": "完全"}
-    },
-    "omentectomy": {
-        "label": "大网膜切除",
-        "type": "select", 
-        "options": {"no": "未切除", "partial": "部分切除", "total": "全切除"}
-    },
-    "lymphadenectomy": {
-        "label": "淋巴结清扫",
+        "zh": "保留生育功能", 
+        "en": "Fertility-Sparing Surgery", 
         "type": "select", 
         "options": {
-            "no": "未清扫",
-            "pelvic": "盆腔淋巴结",
-            "paraaortic": "腹主动脉旁",
-            "both": "盆腔+腹主动脉旁"
+            "no": {"zh": "否", "en": "No"},
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "completeness_of_surgery": {
+        "zh": "全面分期", 
+        "en": "Completeness of Surgery", 
+        "type": "select", 
+        "options": {
+            "incomplete": {"zh": "不完全", "en": "Incomplete"},
+            "complete": {"zh": "完全", "en": "Complete"}
+        }
+    },
+    "omentectomy": {
+        "zh": "大网膜切除", 
+        "en": "Omentectomy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "未切除", "en": "No"},
+            "partial": {"zh": "部分切除", "en": "Partial"},
+            "total": {"zh": "全切除", "en": "Total"}
+        }
+    },
+    "lymphadenectomy": {
+        "zh": "淋巴结清扫", 
+        "en": "Lymphadenectomy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "未清扫", "en": "No"},
+            "pelvic": {"zh": "盆腔淋巴结", "en": "Pelvic"},
+            "paraaortic": {"zh": "腹主动脉旁", "en": "Para-aortic"},
+            "both": {"zh": "盆腔+腹主动脉旁", "en": "Both"}
         }
     },
     "histological_subtype": {
-        "label": "病理类型",
+        "zh": "病理类型", 
+        "en": "Histological Subtype", 
         "type": "select",
         "options": {
-            "serous": "浆液性",
-            "mucinous": "粘液性",
-            "endometrioid": "子宫内膜样",
-            "clear_cell": "透明细胞",
-            "mixed": "混合型",
-            "other": "其他"
+            "serous": {"zh": "浆液性", "en": "Serous"},
+            "mucinous": {"zh": "粘液性", "en": "Mucinous"},
+            "endometrioid": {"zh": "子宫内膜样", "en": "Endometrioid"},
+            "clear_cell": {"zh": "透明细胞", "en": "Clear Cell"},
+            "mixed": {"zh": "混合型", "en": "Mixed"},
+            "other": {"zh": "其他", "en": "Other"}
         }
     },
     "micropapillary": {
-        "label": "微乳头结构",
-        "type": "select", 
-        "options": {"no": "无", "yes": "有"}
-    },
-    "microinfiltration": {
-        "label": "微浸润",
-        "type": "select", 
-        "options": {"no": "无", "yes": "有"}
-    },
-    "psammoma_bodies_calcification": {
-        "label": "钙化砂体",
-        "type": "select", 
-        "options": {"no": "无", "yes": "有"}
-    },
-    "peritoneal_implantation": {
-        "label": "腹膜种植",
+        "zh": "微乳头结构", 
+        "en": "Micropapillary", 
         "type": "select", 
         "options": {
-            "no": "无",
-            "noninvasive": "非浸润性",
-            "invasive": "浸润性"
+            "no": {"zh": "无", "en": "No"},
+            "yes": {"zh": "有", "en": "Yes"}
+        }
+    },
+    "microinfiltration": {
+        "zh": "微浸润", 
+        "en": "Microinfiltration", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "无", "en": "No"},
+            "yes": {"zh": "有", "en": "Yes"}
+        }
+    },
+    "psammoma_bodies_calcification": {
+        "zh": "钙化砂体", 
+        "en": "Psammoma Bodies", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "无", "en": "No"},
+            "yes": {"zh": "有", "en": "Yes"}
+        }
+    },
+    "peritoneal_implantation": {
+        "zh": "腹膜种植", 
+        "en": "Peritoneal Implantation", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "无", "en": "No"},
+            "noninvasive": {"zh": "非浸润性", "en": "Non-invasive"},
+            "invasive": {"zh": "浸润性", "en": "Invasive"}
         }
     },
     "ascites_cytology": {
-        "label": "腹水细胞学",
+        "zh": "腹水细胞学", 
+        "en": "Ascites Cytology", 
         "type": "select", 
         "options": {
-            "no_ascites": "无腹水",
-            "negative": "阴性",
-            "positive": "阳性"
+            "no_ascites": {"zh": "无腹水", "en": "No Ascites"},
+            "negative": {"zh": "阴性", "en": "Negative"},
+            "positive": {"zh": "阳性", "en": "Positive"}
         }
     },
     "figo_staging": {
-        "label": "FIGO分期",
+        "zh": "FIGO分期", 
+        "en": "FIGO Staging", 
         "type": "select", 
         "options": {
-            "IA": "IA期",
-            "IB": "IB期",
-            "IC1": "IC1期",
-            "IC2": "IC2期",
-            "IC3": "IC3期",
-            "II": "II期",
-            "IIIA": "IIIA期",
-            "IIIB": "IIIB期",
-            "IIIC": "IIIC期"
+            "IA": {"zh": "IA期", "en": "Stage IA"},
+            "IB": {"zh": "IB期", "en": "Stage IB"},
+            "IC1": {"zh": "IC1期", "en": "Stage IC1"},
+            "IC2": {"zh": "IC2期", "en": "Stage IC2"},
+            "IC3": {"zh": "IC3期", "en": "Stage IC3"},
+            "II": {"zh": "II期", "en": "Stage II"},
+            "IIIA": {"zh": "IIIA期", "en": "Stage IIIA"},
+            "IIIB": {"zh": "IIIB期", "en": "Stage IIIB"},
+            "IIIC": {"zh": "IIIC期", "en": "Stage IIIC"}
         }
     },
     "unilateral_or_bilateral": {
-        "label": "单侧/双侧",
+        "zh": "单侧/双侧", 
+        "en": "Laterality", 
         "type": "select", 
         "options": {
-            "left": "左侧",
-            "right": "右侧",
-            "bilateral": "双侧"
+            "left": {"zh": "左侧", "en": "Left"},
+            "right": {"zh": "右侧", "en": "Right"},
+            "bilateral": {"zh": "双侧", "en": "Bilateral"}
         }
     },
     "tumor_size": {
-        "label": "肿瘤直径",
+        "zh": "肿瘤直径", 
+        "en": "Tumor Size", 
         "type": "select",
         "options": {
-            "<=5": "≤5cm",
-            "5-10": "5-10cm",
-            "10-15": "10-15cm",
-            ">15": ">15cm"
+            "<=5": {"zh": "≤5cm", "en": "<=5cm"},
+            "5-10": {"zh": "5-10cm", "en": "5-10cm"},
+            "10-15": {"zh": "10-15cm", "en": "10-15cm"},
+            ">15": {"zh": ">15cm", "en": ">15cm"}
         }
     },
     "ca125": {
-        "label": "CA125",
+        "zh": "CA125", 
+        "en": "CA125", 
         "type": "select",
         "options": {
-            "normal": "正常 (<35 U/mL)",
-            "mild": "轻度升高 (35-100 U/mL)",
-            "moderate": "中度升高 (100-500 U/mL)",
-            "high": "显著升高 (>500 U/mL)"
+            "normal": {"zh": "正常 (<35 U/mL)", "en": "Normal (<35 U/mL)"},
+            "mild": {"zh": "轻度升高 (35-100)", "en": "Mild (35-100)"},
+            "moderate": {"zh": "中度升高 (100-500)", "en": "Moderate (100-500)"},
+            "high": {"zh": "显著升高 (>500)", "en": "High (>500)"}
         }
     },
     "cea": {
-        "label": "CEA",
+        "zh": "CEA", 
+        "en": "CEA", 
         "type": "select",
         "options": {
-            "normal": "正常 (<5 ng/mL)",
-            "elevated": "升高 (>=5 ng/mL)"
+            "normal": {"zh": "正常 (<5 ng/mL)", "en": "Normal (<5 ng/mL)"},
+            "elevated": {"zh": "升高 (>=5)", "en": "Elevated (>=5)"}
         }
     },
     "ca199": {
-        "label": "CA199",
+        "zh": "CA199", 
+        "en": "CA199", 
         "type": "select",
         "options": {
-            "normal": "正常 (<37 U/mL)",
-            "elevated": "升高 (>=37 U/mL)"
+            "normal": {"zh": "正常 (<37 U/mL)", "en": "Normal (<37 U/mL)"},
+            "elevated": {"zh": "升高 (>=37)", "en": "Elevated (>=37)"}
         }
     },
     "afp": {
-        "label": "AFP",
+        "zh": "AFP", 
+        "en": "AFP", 
         "type": "select",
         "options": {
-            "normal": "正常 (<10 ng/mL)",
-            "elevated": "升高 (>=10 ng/mL)"
+            "normal": {"zh": "正常 (<10 ng/mL)", "en": "Normal (<10 ng/mL)"},
+            "elevated": {"zh": "升高 (>=10)", "en": "Elevated (>=10)"}
         }
     },
     "ca724": {
-        "label": "CA724",
+        "zh": "CA724", 
+        "en": "CA724", 
         "type": "select",
         "options": {
-            "normal": "正常 (<6.9 U/mL)",
-            "elevated": "升高 (>=6.9 U/mL)"
+            "normal": {"zh": "正常 (<6.9 U/mL)", "en": "Normal (<6.9 U/mL)"},
+            "elevated": {"zh": "升高 (>=6.9)", "en": "Elevated (>=6.9)"}
         }
     },
     "he4": {
-        "label": "HE4",
+        "zh": "HE4", 
+        "en": "HE4", 
         "type": "select",
         "options": {
-            "normal": "正常 (<70 pmol/L)",
-            "mild": "轻度升高 (70-140 pmol/L)",
-            "elevated": "显著升高 (>140 pmol/L)"
+            "normal": {"zh": "正常 (<70 pmol/L)", "en": "Normal (<70 pmol/L)"},
+            "mild": {"zh": "轻度升高 (70-140)", "en": "Mild (70-140)"},
+            "elevated": {"zh": "显著升高 (>140)", "en": "High (>140)"}
         }
     },
     "smoking_drinking_history": {
-        "label": "吸烟饮酒史",
+        "zh": "吸烟饮酒史", 
+        "en": "Smoking/Drinking", 
         "type": "select", 
         "options": {
-            "no": "无",
-            "smoking": "吸烟",
-            "drinking": "饮酒",
-            "both": "吸烟+饮酒"
+            "no": {"zh": "无", "en": "No"},
+            "smoking": {"zh": "吸烟", "en": "Smoking"},
+            "drinking": {"zh": "饮酒", "en": "Drinking"},
+            "both": {"zh": "吸烟+饮酒", "en": "Both"}
         }
     },
     "receive_estrogens": {
-        "label": "雌激素暴露史",
+        "zh": "雌激素暴露史", 
+        "en": "Estrogen Exposure", 
         "type": "select", 
         "options": {
-            "no": "无",
-            "hrt": "激素替代治疗",
-            "contraceptive": "避孕药",
-            "other": "其他"
+            "no": {"zh": "无", "en": "No"},
+            "hrt": {"zh": "激素替代治疗", "en": "HRT"},
+            "contraceptive": {"zh": "避孕药", "en": "Contraceptive"},
+            "other": {"zh": "其他", "en": "Other"}
         }
     },
     "ovulation_induction": {
-        "label": "促排卵治疗史",
-        "type": "select", 
-        "options": {"no": "无", "yes": "有"}
-    },
-    "postoperative_adjuvant_therapy": {
-        "label": "术后辅助治疗",
+        "zh": "促排卵治疗史", 
+        "en": "Ovulation Induction", 
         "type": "select", 
         "options": {
-            "no": "未行辅助治疗",
-            "chemotherapy": "化疗",
-            "targeted": "靶向治疗",
-            "combined": "联合治疗"
+            "no": {"zh": "无", "en": "No"},
+            "yes": {"zh": "有", "en": "Yes"}
+        }
+    },
+    "postoperative_adjuvant_therapy": {
+        "zh": "术后辅助治疗", 
+        "en": "Adjuvant Therapy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "未行辅助治疗", "en": "No"},
+            "chemotherapy": {"zh": "化疗", "en": "Chemotherapy"},
+            "targeted": {"zh": "靶向治疗", "en": "Targeted"},
+            "combined": {"zh": "联合治疗", "en": "Combined"}
         }
     },
     "type_of_lesion": {
-        "label": "病灶类型",
+        "zh": "病灶类型", 
+        "en": "Lesion Type", 
         "type": "select", 
         "options": {
-            "cystic": "囊性",
-            "solid": "实性",
-            "mixed": "囊实混合"
+            "cystic": {"zh": "囊性", "en": "Cystic"},
+            "solid": {"zh": "实性", "en": "Solid"},
+            "mixed": {"zh": "囊实混合", "en": "Mixed"}
         }
     },
     "papillary_area_ratio": {
-        "label": "乳头面积占比",
+        "zh": "乳头面积占比", 
+        "en": "Papillary Ratio", 
         "type": "select",
         "options": {
-            "<10%": "<10%",
-            "10-30%": "10-30%",
-            "30-50%": "30-50%",
-            ">50%": ">50%"
+            "<10%": {"zh": "<10%", "en": "<10%"},
+            "10-30%": {"zh": "10-30%", "en": "10-30%"},
+            "30-50%": {"zh": "30-50%", "en": "30-50%"},
+            ">50%": {"zh": ">50%", "en": ">50%"}
         }
     }
 }
+
+
+# ================== 数据预处理器类 ==================
+class DataPreprocessor:
+    """数据预处理器 - 必须与训练时的定义一致"""
+    def __init__(self, select_k=None):
+        self.scaler = StandardScaler()
+        self.selector = None
+        self.select_k = select_k
+        self.feature_names = None
+        
+    def fit(self, X, y=None):
+        self.scaler.fit(X)
+        X_scaled = self.scaler.transform(X)
+        
+        if self.select_k is not None and y is not None:
+            self.selector = SelectKBest(f_classif, k=min(self.select_k, X.shape[1]))
+            self.selector.fit(X_scaled, y)
+        
+        return self
+    
+    def transform(self, X):
+        X_scaled = self.scaler.transform(X)
+        
+        if self.selector is not None:
+            X_scaled = self.selector.transform(X_scaled)
+        
+        return X_scaled
+    
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        return self.transform(X)
 
 
 # ================== 模型定义 ==================
@@ -564,6 +852,19 @@ class LearnableFusion(nn.Module):
 
 # ================== 工具函数 ==================
 
+def get_text(key: str, lang: str) -> str:
+    """获取翻译文本"""
+    return TRANSLATIONS.get(key, {}).get(lang, key)
+
+
+def get_option_label(var_name: str, option_key: str, lang: str) -> str:
+    """获取选项的翻译标签"""
+    var_info = INPUT_VARIABLES.get(var_name, {})
+    options = var_info.get("options", {})
+    option_info = options.get(option_key, {})
+    return option_info.get(lang, option_key)
+
+
 def encode_option(var_name: str, option_key: str) -> float:
     """将选项编码为数值"""
     var_info = INPUT_VARIABLES.get(var_name, {})
@@ -578,29 +879,132 @@ def encode_option(var_name: str, option_key: str) -> float:
 
 
 @st.cache_resource
-def load_models():
-    """加载模型（演示模式）"""
+def load_models(model_dir="results_clinical_enhanced_v3"):
+    """加载训练好的模型"""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    input_dim = len(INPUT_VARIABLES)
-    latent_dim = 64
-    fused_dim = latent_dim * 2
-    num_bins = 10
+    models = {}
+    use_pretrained = False
     
-    models = {
-        'ae': EnhancedDenoisingAE(input_dim, [256, 128], latent_dim).to(device),
-        'trans': EnhancedTransformer(latent_dim).to(device),
-        'ds': EnhancedDeepSurv(fused_dim, [256, 128, 64]).to(device),
-        'dh': EnhancedDeepHit(fused_dim, [256, 128], num_bins).to(device),
-        'fusion': LearnableFusion().to(device),
-        'time_cuts': np.linspace(0, 120, num_bins + 1),
-        'ds_min_max': np.array([-5.0, 5.0]),
-        'device': device
-    }
+    try:
+        # 检查模型文件是否存在
+        required_files = [
+            'model_ae.pt', 'model_trans.pt', 'model_deepsurv.pt',
+            'model_deephit.pt', 'model_fusion.pt', 'preprocessor.joblib',
+            'time_cuts.npy', 'ds_min_max.npy', 'best_parameters.json'
+        ]
+        
+        all_exist = all(os.path.exists(os.path.join(model_dir, f)) for f in required_files)
+        
+        if all_exist:
+            # 加载参数
+            with open(os.path.join(model_dir, "best_parameters.json"), "r") as f:
+                params = json.load(f)
+            
+            # 加载预处理器
+            preprocessor = joblib.load(os.path.join(model_dir, "preprocessor.joblib"))
+            
+            # 加载时间切分点
+            time_cuts = np.load(os.path.join(model_dir, "time_cuts.npy"))
+            num_bins = len(time_cuts) - 1
+            
+            # 加载DeepSurv min/max
+            ds_min_max = np.load(os.path.join(model_dir, "ds_min_max.npy"))
+            
+            # 加载FCM中心（如果存在）
+            fcm_path = os.path.join(model_dir, "fcm_centers.npy")
+            if os.path.exists(fcm_path):
+                fcm_centers = np.load(fcm_path)
+            else:
+                fcm_centers = np.array([[0.3, 0.3], [0.7, 0.7]])
+            
+            # 确定输入维度
+            input_dim = preprocessor.scaler.n_features_in_
+            if hasattr(preprocessor, 'selector') and preprocessor.selector is not None:
+                input_dim = preprocessor.selector.k if hasattr(preprocessor.selector, 'k') else input_dim
+            
+            latent_dim = params.get('ae_latent', 64)
+            fused_dim = latent_dim * 2
+            
+            # 创建并加载模型
+            ae = EnhancedDenoisingAE(
+                input_dim, 
+                [params.get('ae_h1', 256), params.get('ae_h2', 128)], 
+                latent_dim
+            )
+            ae.load_state_dict(torch.load(os.path.join(model_dir, "model_ae.pt"), map_location=device))
+            ae.eval()
+            
+            trans = EnhancedTransformer(latent_dim)
+            trans.load_state_dict(torch.load(os.path.join(model_dir, "model_trans.pt"), map_location=device))
+            trans.eval()
+            
+            ds = EnhancedDeepSurv(
+                fused_dim, 
+                [params.get('ds_h1', 256), params.get('ds_h2', 128), params.get('ds_h3', 64)], 
+                drop_rate=params.get('ds_drop', 0.3)
+            )
+            ds.load_state_dict(torch.load(os.path.join(model_dir, "model_deepsurv.pt"), map_location=device))
+            ds.eval()
+            
+            dh = EnhancedDeepHit(
+                fused_dim, 
+                [params.get('dh_h1', 256), params.get('dh_h2', 128)], 
+                num_durations=num_bins
+            )
+            dh.load_state_dict(torch.load(os.path.join(model_dir, "model_deephit.pt"), map_location=device))
+            dh.eval()
+            
+            fusion = LearnableFusion()
+            fusion.load_state_dict(torch.load(os.path.join(model_dir, "model_fusion.pt"), map_location=device))
+            fusion.eval()
+            
+            models = {
+                'ae': ae.to(device),
+                'trans': trans.to(device),
+                'ds': ds.to(device),
+                'dh': dh.to(device),
+                'fusion': fusion.to(device),
+                'preprocessor': preprocessor,
+                'time_cuts': time_cuts,
+                'ds_min_max': ds_min_max,
+                'fcm_centers': fcm_centers,
+                'params': params,
+                'device': device,
+                'input_dim': input_dim
+            }
+            use_pretrained = True
+            
+    except Exception as e:
+        st.warning(f"加载模型时出错: {e}，使用默认模式")
+        use_pretrained = False
     
-    for key in ['ae', 'trans', 'ds', 'dh', 'fusion']:
-        models[key].eval()
+    # 如果加载失败，使用默认初始化
+    if not use_pretrained:
+        input_dim = len(INPUT_VARIABLES)
+        latent_dim = 64
+        fused_dim = latent_dim * 2
+        num_bins = 10
+        
+        models = {
+            'ae': EnhancedDenoisingAE(input_dim, [256, 128], latent_dim).to(device),
+            'trans': EnhancedTransformer(latent_dim).to(device),
+            'ds': EnhancedDeepSurv(fused_dim, [256, 128, 64]).to(device),
+            'dh': EnhancedDeepHit(fused_dim, [256, 128], num_bins).to(device),
+            'fusion': LearnableFusion().to(device),
+            'preprocessor': None,
+            'time_cuts': np.linspace(0, 120, num_bins + 1),
+            'ds_min_max': np.array([-5.0, 5.0]),
+            'fcm_centers': np.array([[0.3, 0.3], [0.7, 0.7]]),
+            'params': {},
+            'device': device,
+            'input_dim': input_dim
+        }
+        
+        for key in ['ae', 'trans', 'ds', 'dh', 'fusion']:
+            models[key].eval()
     
+    models['use_pretrained'] = use_pretrained
     return models
 
 
@@ -620,7 +1024,16 @@ def preprocess_input(input_data: Dict, models: Dict) -> np.ndarray:
             feature_values.append(0.0)
     
     X = np.array(feature_values).reshape(1, -1)
-    X = (X - X.mean()) / (X.std() + 1e-8)
+    
+    # 使用预处理器（如果可用）
+    if models.get('preprocessor') is not None:
+        try:
+            X = models['preprocessor'].transform(X)
+        except Exception as e:
+            # 如果预处理失败，使用简单标准化
+            X = (X - X.mean()) / (X.std() + 1e-8)
+    else:
+        X = (X - X.mean()) / (X.std() + 1e-8)
     
     return X
 
@@ -677,7 +1090,7 @@ def predict_single(input_data: Dict, models: Dict) -> Dict:
     }
 
 
-def predict_batch(df: pd.DataFrame, models: Dict) -> pd.DataFrame:
+def predict_batch(df: pd.DataFrame, models: Dict, lang: str) -> pd.DataFrame:
     """批量患者预测"""
     results = []
     
@@ -685,14 +1098,20 @@ def predict_batch(df: pd.DataFrame, models: Dict) -> pd.DataFrame:
     status_text = st.empty()
     
     for idx, row in df.iterrows():
-        status_text.text(f"正在处理第 {idx + 1}/{len(df)} 位患者...")
+        if lang == 'zh':
+            status_text.text(f"正在处理第 {idx + 1}/{len(df)} 位患者...")
+        else:
+            status_text.text(f"Processing patient {idx + 1}/{len(df)}...")
         
         input_data = {}
         for var_name in INPUT_VARIABLES.keys():
-            col_name = INPUT_VARIABLES[var_name]['label']
+            col_name_zh = INPUT_VARIABLES[var_name]['zh']
+            col_name_en = INPUT_VARIABLES[var_name]['en']
             
-            if col_name in row:
-                input_data[var_name] = row[col_name]
+            if col_name_zh in row:
+                input_data[var_name] = row[col_name_zh]
+            elif col_name_en in row:
+                input_data[var_name] = row[col_name_en]
             elif var_name in row:
                 input_data[var_name] = row[var_name]
         
@@ -700,29 +1119,31 @@ def predict_batch(df: pd.DataFrame, models: Dict) -> pd.DataFrame:
             pred = predict_single(input_data, models)
             
             if pred['final_risk'] < 0.3:
-                risk_level = "低风险"
+                risk_level = get_text("low_risk", lang)
             elif pred['final_risk'] < 0.6:
-                risk_level = "中等风险"
+                risk_level = get_text("medium_risk", lang)
             else:
-                risk_level = "高风险"
+                risk_level = get_text("high_risk", lang)
+            
+            months_text = get_text("months", lang)
             
             results.append({
-                "患者ID": row.get('patient_id', row.get('患者ID', idx + 1)),
-                "总体复发风险": f"{pred['final_risk']*100:.1f}%",
-                "12个月风险": f"{pred['risk_12m']*100:.1f}%",
-                "36个月风险": f"{pred['risk_36m']*100:.1f}%",
-                "60个月风险": f"{pred['risk_60m']*100:.1f}%",
-                "风险等级": risk_level,
+                get_text("patient_id", lang): row.get('patient_id', row.get('患者ID', idx + 1)),
+                get_text("overall_risk", lang): f"{pred['final_risk']*100:.1f}%",
+                f"12{months_text}": f"{pred['risk_12m']*100:.1f}%",
+                f"36{months_text}": f"{pred['risk_36m']*100:.1f}%",
+                f"60{months_text}": f"{pred['risk_60m']*100:.1f}%",
+                get_text("risk_level", lang): risk_level,
                 '_final_risk_value': pred['final_risk']
             })
         except Exception as e:
             results.append({
-                "患者ID": row.get('patient_id', row.get('患者ID', idx + 1)),
-                "总体复发风险": "错误",
-                "12个月风险": "N/A",
-                "36个月风险": "N/A",
-                "60个月风险": "N/A",
-                "风险等级": "错误",
+                get_text("patient_id", lang): row.get('patient_id', row.get('患者ID', idx + 1)),
+                get_text("overall_risk", lang): "Error",
+                f"12{months_text}": "N/A",
+                f"36{months_text}": "N/A",
+                f"60{months_text}": "N/A",
+                get_text("risk_level", lang): "Error",
                 '_final_risk_value': 0
             })
         
@@ -734,12 +1155,13 @@ def predict_batch(df: pd.DataFrame, models: Dict) -> pd.DataFrame:
     return pd.DataFrame(results)
 
 
-def create_template_csv() -> pd.DataFrame:
+def create_template_csv(lang: str) -> pd.DataFrame:
     """创建CSV模板"""
-    columns = ['患者ID']
+    columns = [get_text("patient_id", lang)]
     
     for var_name, var_info in INPUT_VARIABLES.items():
-        columns.append(var_info['label'])
+        col_name = var_info['zh'] if lang == 'zh' else var_info['en']
+        columns.append(col_name)
     
     sample_data = {columns[0]: [1, 2, 3]}
     
@@ -756,7 +1178,7 @@ def create_template_csv() -> pd.DataFrame:
 
 # ================== PDF生成 ==================
 
-def generate_pdf_report(results_df: pd.DataFrame) -> bytes:
+def generate_pdf_report(results_df: pd.DataFrame, lang: str) -> bytes:
     """生成PDF报告"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -780,9 +1202,14 @@ def generate_pdf_report(results_df: pd.DataFrame) -> bytes:
     story.append(Spacer(1, 10))
     
     total = len(results_df)
-    high_risk = len(results_df[results_df['风险等级'].str.contains('高', na=False)])
-    medium_risk = len(results_df[results_df['风险等级'].str.contains('中', na=False)])
-    low_risk = len(results_df[results_df['风险等级'].str.contains('低', na=False)])
+    risk_col = get_text("risk_level", lang)
+    
+    if risk_col in results_df.columns:
+        high_risk = len(results_df[results_df[risk_col].str.contains('High|高', case=False, na=False)])
+        medium_risk = len(results_df[results_df[risk_col].str.contains('Medium|中', case=False, na=False)])
+        low_risk = len(results_df[results_df[risk_col].str.contains('Low|低', case=False, na=False)])
+    else:
+        high_risk = medium_risk = low_risk = 0
     
     summary_data = [
         ["Metric", "Value"],
@@ -819,7 +1246,7 @@ def generate_pdf_report(results_df: pd.DataFrame) -> bytes:
     return buffer.getvalue()
 
 
-def generate_single_pdf_report(patient_data: Dict, results: Dict) -> bytes:
+def generate_single_pdf_report(patient_data: Dict, results: Dict, lang: str) -> bytes:
     """生成单个患者PDF报告"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -883,23 +1310,23 @@ def generate_single_pdf_report(patient_data: Dict, results: Dict) -> bytes:
 
 # ================== 可视化函数 ==================
 
-def create_gauge_chart(risk: float) -> go.Figure:
+def create_gauge_chart(risk: float, lang: str) -> go.Figure:
     """创建仪表盘图"""
     if risk < 0.3:
         color = "green"
-        risk_text = TEXTS["low_risk"]
+        risk_text = get_text("low_risk", lang)
     elif risk < 0.6:
         color = "orange"
-        risk_text = TEXTS["medium_risk"]
+        risk_text = get_text("medium_risk", lang)
     else:
         color = "red"
-        risk_text = TEXTS["high_risk"]
+        risk_text = get_text("high_risk", lang)
     
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=risk * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': f"{TEXTS['overall_risk']}<br><span style='font-size:0.8em'>{risk_text}</span>"},
+        title={'text': f"{get_text('overall_risk', lang)}<br><span style='font-size:0.8em'>{risk_text}</span>"},
         number={'suffix': '%', 'font': {'size': 40}},
         gauge={
             'axis': {'range': [0, 100], 'tickwidth': 1},
@@ -923,18 +1350,18 @@ def create_gauge_chart(risk: float) -> go.Figure:
     return fig
 
 
-def create_survival_curve(survival: np.ndarray, time_points: np.ndarray) -> go.Figure:
+def create_survival_curve(survival: np.ndarray, time_points: np.ndarray, lang: str) -> go.Figure:
     """创建生存曲线图"""
     fig = make_subplots(rows=1, cols=2, subplot_titles=(
-        TEXTS["survival_probability"],
-        TEXTS["cumulative_risk"]
+        get_text("survival_probability", lang),
+        get_text("cumulative_risk", lang)
     ))
     
     fig.add_trace(
         go.Scatter(
             x=time_points, y=survival,
             mode='lines+markers',
-            name=TEXTS["survival_probability"],
+            name=get_text("survival_probability", lang),
             line=dict(color='blue', width=2),
             fill='tozeroy',
             fillcolor='rgba(0, 100, 255, 0.2)'
@@ -947,7 +1374,7 @@ def create_survival_curve(survival: np.ndarray, time_points: np.ndarray) -> go.F
         go.Scatter(
             x=time_points, y=cif,
             mode='lines+markers',
-            name=TEXTS["cumulative_risk"],
+            name=get_text("cumulative_risk", lang),
             line=dict(color='red', width=2),
             fill='tozeroy',
             fillcolor='rgba(255, 0, 0, 0.2)'
@@ -955,21 +1382,21 @@ def create_survival_curve(survival: np.ndarray, time_points: np.ndarray) -> go.F
         row=1, col=2
     )
     
-    time_label = f"{TEXTS['time']} ({TEXTS['months']})"
+    time_label = f"{get_text('time', lang)} ({get_text('months', lang).strip()})"
     
     fig.update_xaxes(title_text=time_label, row=1, col=1)
     fig.update_xaxes(title_text=time_label, row=1, col=2)
-    fig.update_yaxes(title_text=TEXTS["probability"], range=[0, 1], row=1, col=1)
-    fig.update_yaxes(title_text=TEXTS["probability"], range=[0, 1], row=1, col=2)
+    fig.update_yaxes(title_text=get_text("probability", lang), range=[0, 1], row=1, col=1)
+    fig.update_yaxes(title_text=get_text("probability", lang), range=[0, 1], row=1, col=2)
     
     fig.update_layout(height=400, showlegend=False, margin=dict(l=50, r=50, t=50, b=50))
     
     return fig
 
 
-def create_time_risk_bar(risk_12m: float, risk_36m: float, risk_60m: float) -> go.Figure:
+def create_time_risk_bar(risk_12m: float, risk_36m: float, risk_60m: float, lang: str) -> go.Figure:
     """创建时间点风险柱状图"""
-    months_text = TEXTS["months"]
+    months_text = get_text("months", lang)
     
     fig = go.Figure(data=[
         go.Bar(
@@ -982,8 +1409,8 @@ def create_time_risk_bar(risk_12m: float, risk_36m: float, risk_60m: float) -> g
     ])
     
     fig.update_layout(
-        title=TEXTS["time_risk"],
-        yaxis_title=f"{TEXTS['probability']} (%)",
+        title=get_text("time_risk", lang),
+        yaxis_title=f"{get_text('probability', lang)} (%)",
         yaxis_range=[0, 100],
         height=350,
         margin=dict(l=50, r=50, t=50, b=50)
@@ -992,15 +1419,20 @@ def create_time_risk_bar(risk_12m: float, risk_36m: float, risk_60m: float) -> g
     return fig
 
 
-def create_risk_distribution_chart(results_df: pd.DataFrame) -> go.Figure:
+def create_risk_distribution_chart(results_df: pd.DataFrame, lang: str) -> go.Figure:
     """创建风险分布图"""
-    high_risk = len(results_df[results_df['风险等级'].str.contains('高', na=False)])
-    medium_risk = len(results_df[results_df['风险等级'].str.contains('中', na=False)])
-    low_risk = len(results_df[results_df['风险等级'].str.contains('低', na=False)])
+    risk_col = get_text("risk_level", lang)
+    
+    if risk_col in results_df.columns:
+        high_risk = len(results_df[results_df[risk_col].str.contains('High|高', case=False, na=False)])
+        medium_risk = len(results_df[results_df[risk_col].str.contains('Medium|中', case=False, na=False)])
+        low_risk = len(results_df[results_df[risk_col].str.contains('Low|低', case=False, na=False)])
+    else:
+        high_risk = medium_risk = low_risk = 0
     
     fig = go.Figure(data=[
         go.Pie(
-            labels=[TEXTS["low_risk"], TEXTS["medium_risk"], TEXTS["high_risk"]],
+            labels=[get_text("low_risk", lang), get_text("medium_risk", lang), get_text("high_risk", lang)],
             values=[low_risk, medium_risk, high_risk],
             marker_colors=['#2ecc71', '#f39c12', '#e74c3c'],
             hole=0.4,
@@ -1009,7 +1441,7 @@ def create_risk_distribution_chart(results_df: pd.DataFrame) -> go.Figure:
     ])
     
     fig.update_layout(
-        title=TEXTS["risk_distribution"],
+        title=get_text("risk_distribution", lang),
         height=400
     )
     
@@ -1018,13 +1450,14 @@ def create_risk_distribution_chart(results_df: pd.DataFrame) -> go.Figure:
 
 # ================== 输入控件 ==================
 
-def render_select_widget(var_name: str, var_info: Dict, key_prefix: str = "") -> str:
+def render_select_widget(var_name: str, var_info: Dict, lang: str, key_prefix: str = "") -> str:
     """渲染下拉选择控件"""
-    label = var_info['label']
+    label = f"{var_info['zh']} | {var_info['en']}"
+    
     options = var_info.get('options', {})
     option_keys = list(options.keys())
     
-    format_func = lambda x: options[x]
+    format_func = lambda x: f"{options[x]['zh']} | {options[x]['en']}"
     
     selected = st.selectbox(
         label,
@@ -1036,12 +1469,14 @@ def render_select_widget(var_name: str, var_info: Dict, key_prefix: str = "") ->
     return selected
 
 
-def render_number_widget(var_name: str, var_info: Dict, key_prefix: str = "") -> float:
+def render_number_widget(var_name: str, var_info: Dict, lang: str, key_prefix: str = "") -> float:
     """渲染数值输入控件"""
-    label = var_info['label']
+    label = f"{var_info['zh']} | {var_info['en']}"
     
     if 'unit' in var_info:
-        label = f"{label} ({var_info['unit']})"
+        unit_zh = var_info['unit'].get('zh', '')
+        unit_en = var_info['unit'].get('en', '')
+        label = f"{label} ({unit_zh}/{unit_en})"
     
     value = st.number_input(
         label,
@@ -1060,36 +1495,51 @@ def main():
     # 加载模型
     models = load_models()
     
+    # 语言选择
+    col_lang1, col_lang2, col_lang3 = st.columns([1, 1, 1])
+    with col_lang2:
+        language = st.selectbox(
+            "🌐 Language | 语言",
+            options=list(LANGUAGES.keys()),
+            index=0,
+            key="language_selector"
+        )
+    lang = LANGUAGES[language]
+    
     # 主标题和医院信息
     st.markdown(
         f"""
         <div style='text-align: center; padding: 10px;'>
-            <h1>{TEXTS['title']}</h1>
-            <h3>{TEXTS['subtitle']}</h3>
-            <p style='color: #1E88E5; font-size: 18px; font-weight: bold;'>{TEXTS['hospital']}</p>
+            <h1>{get_text('title', lang)}</h1>
+            <h3>{get_text('subtitle', lang)}</h3>
+            <p style='color: #1E88E5; font-size: 18px; font-weight: bold;'>{get_text('hospital', lang)}</p>
         </div>
         """,
         unsafe_allow_html=True
     )
     
+    # 显示模型状态
+    if models.get('use_pretrained', False):
+        st.success("✅ " + ("已加载训练好的模型" if lang == 'zh' else "Trained model loaded successfully"))
+    
     st.markdown("---")
     
     # 选项卡
     tab1, tab2 = st.tabs([
-        f"👤 {TEXTS['single_patient']}", 
-        f"📊 {TEXTS['batch_prediction']}"
+        f"👤 {get_text('single_patient', lang)}", 
+        f"📊 {get_text('batch_prediction', lang)}"
     ])
     
     # ==================== 单个患者预测 ====================
     with tab1:
-        st.header(TEXTS["patient_info"])
+        st.header(get_text("patient_info", lang))
         
         col1, col2, col3 = st.columns(3)
         input_data = {}
         
         # 基本信息
         with col1:
-            st.subheader(f"📝 {TEXTS['basic_info']}")
+            st.subheader(f"📝 {get_text('basic_info', lang)}")
             basic_vars = ['age', 'family_cancer_history', 'sexual_history', 'parity', 
                          'menopausal_status', 'comorbidities', 'smoking_drinking_history',
                          'receive_estrogens', 'ovulation_induction']
@@ -1097,13 +1547,13 @@ def main():
                 if var_name in INPUT_VARIABLES:
                     var_info = INPUT_VARIABLES[var_name]
                     if var_info['type'] == 'select':
-                        input_data[var_name] = render_select_widget(var_name, var_info, "single_")
+                        input_data[var_name] = render_select_widget(var_name, var_info, lang, "single_")
                     else:
-                        input_data[var_name] = render_number_widget(var_name, var_info, "single_")
+                        input_data[var_name] = render_number_widget(var_name, var_info, lang, "single_")
         
         # 手术信息
         with col2:
-            st.subheader(f"🔪 {TEXTS['surgical_info']}")
+            st.subheader(f"🔪 {get_text('surgical_info', lang)}")
             surgical_vars = ['presenting_symptom', 'surgical_route', 'tumor_envelope_integrity',
                            'fertility_sparing_surgery', 'completeness_of_surgery', 'omentectomy',
                            'lymphadenectomy', 'postoperative_adjuvant_therapy']
@@ -1111,13 +1561,13 @@ def main():
                 if var_name in INPUT_VARIABLES:
                     var_info = INPUT_VARIABLES[var_name]
                     if var_info['type'] == 'select':
-                        input_data[var_name] = render_select_widget(var_name, var_info, "single_")
+                        input_data[var_name] = render_select_widget(var_name, var_info, lang, "single_")
                     else:
-                        input_data[var_name] = render_number_widget(var_name, var_info, "single_")
+                        input_data[var_name] = render_number_widget(var_name, var_info, lang, "single_")
         
         # 病理信息
         with col3:
-            st.subheader(f"🔬 {TEXTS['pathology_info']}")
+            st.subheader(f"🔬 {get_text('pathology_info', lang)}")
             pathology_vars = ['histological_subtype', 'micropapillary', 'microinfiltration',
                             'psammoma_bodies_calcification', 'peritoneal_implantation', 
                             'ascites_cytology', 'figo_staging', 'unilateral_or_bilateral',
@@ -1126,18 +1576,18 @@ def main():
                 if var_name in INPUT_VARIABLES:
                     var_info = INPUT_VARIABLES[var_name]
                     if var_info['type'] == 'select':
-                        input_data[var_name] = render_select_widget(var_name, var_info, "single_")
+                        input_data[var_name] = render_select_widget(var_name, var_info, lang, "single_")
                     else:
-                        input_data[var_name] = render_number_widget(var_name, var_info, "single_")
+                        input_data[var_name] = render_number_widget(var_name, var_info, lang, "single_")
         
         # 肿瘤标志物
-        st.subheader(f"🧪 {TEXTS['tumor_markers']}")
+        st.subheader(f"🧪 {get_text('tumor_markers', lang)}")
         marker_cols = st.columns(6)
         marker_vars = ['ca125', 'cea', 'ca199', 'afp', 'ca724', 'he4']
         for i, var_name in enumerate(marker_vars):
             with marker_cols[i]:
                 var_info = INPUT_VARIABLES[var_name]
-                input_data[var_name] = render_select_widget(var_name, var_info, "single_")
+                input_data[var_name] = render_select_widget(var_name, var_info, lang, "single_")
         
         st.markdown("---")
         
@@ -1145,128 +1595,142 @@ def main():
         col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
         with col_btn2:
             predict_clicked = st.button(
-                TEXTS["predict_button"],
+                get_text("predict_button", lang),
                 type="primary",
                 use_container_width=True,
                 key="single_predict"
             )
         
         if predict_clicked:
-            with st.spinner(TEXTS["processing"]):
+            with st.spinner(get_text("processing", lang)):
                 results = predict_single(input_data, models)
                 
                 st.markdown("---")
-                st.header(TEXTS["prediction_results"])
+                st.header(get_text("prediction_results", lang))
                 
                 result_col1, result_col2 = st.columns([1, 2])
                 
                 with result_col1:
-                    gauge_fig = create_gauge_chart(results['final_risk'])
+                    gauge_fig = create_gauge_chart(results['final_risk'], lang)
                     st.plotly_chart(gauge_fig, use_container_width=True)
                     
                     bar_fig = create_time_risk_bar(
                         results['risk_12m'], 
                         results['risk_36m'], 
-                        results['risk_60m']
+                        results['risk_60m'],
+                        lang
                     )
                     st.plotly_chart(bar_fig, use_container_width=True)
                 
                 with result_col2:
-                    st.subheader(TEXTS["survival_curve"])
+                    st.subheader(get_text("survival_curve", lang))
                     survival_fig = create_survival_curve(
                         results['survival'],
-                        results['time_points']
+                        results['time_points'],
+                        lang
                     )
                     st.plotly_chart(survival_fig, use_container_width=True)
                 
                 # 临床建议
                 st.markdown("---")
-                st.subheader(TEXTS["clinical_advice"])
+                st.subheader(get_text("clinical_advice", lang))
                 
                 risk = results['final_risk']
                 if risk < 0.3:
                     risk_level = "low_risk"
                     advice_key = "advice_low"
-                    st.success(f"**{TEXTS['risk_level']}: {TEXTS[risk_level]}** ({risk*100:.1f}%)")
+                    st.success(f"**{get_text('risk_level', lang)}: {get_text(risk_level, lang)}** ({risk*100:.1f}%)")
                 elif risk < 0.6:
                     risk_level = "medium_risk"
                     advice_key = "advice_medium"
-                    st.warning(f"**{TEXTS['risk_level']}: {TEXTS[risk_level]}** ({risk*100:.1f}%)")
+                    st.warning(f"**{get_text('risk_level', lang)}: {get_text(risk_level, lang)}** ({risk*100:.1f}%)")
                 else:
                     risk_level = "high_risk"
                     advice_key = "advice_high"
-                    st.error(f"**{TEXTS['risk_level']}: {TEXTS[risk_level]}** ({risk*100:.1f}%)")
+                    st.error(f"**{get_text('risk_level', lang)}: {get_text(risk_level, lang)}** ({risk*100:.1f}%)")
                 
-                st.markdown(TEXTS[advice_key])
+                st.markdown(get_text(advice_key, lang))
                 
                 # 导出按钮
                 st.markdown("---")
-                st.subheader("📥 导出结果")
+                st.subheader(f"📥 {get_text('export_results', lang)}")
                 export_col1, export_col2 = st.columns(2)
                 
                 with export_col1:
-                    detail_df = pd.DataFrame({
-                        '指标': ['总体风险', 'DeepSurv风险', 'DeepHit风险', 
-                                '12个月风险', '36个月风险', '60个月风险'],
-                        '数值': [f"{results['final_risk']*100:.2f}%",
-                                f"{results['risk_deepsurv']*100:.2f}%",
-                                f"{results['risk_deephit']*100:.2f}%",
-                                f"{results['risk_12m']*100:.2f}%",
-                                f"{results['risk_36m']*100:.2f}%",
-                                f"{results['risk_60m']*100:.2f}%"]
-                    })
+                    if lang == 'zh':
+                        detail_df = pd.DataFrame({
+                            '指标': ['总体风险', 'DeepSurv风险', 'DeepHit风险', 
+                                    '12个月风险', '36个月风险', '60个月风险'],
+                            '数值': [f"{results['final_risk']*100:.2f}%",
+                                    f"{results['risk_deepsurv']*100:.2f}%",
+                                    f"{results['risk_deephit']*100:.2f}%",
+                                    f"{results['risk_12m']*100:.2f}%",
+                                    f"{results['risk_36m']*100:.2f}%",
+                                    f"{results['risk_60m']*100:.2f}%"]
+                        })
+                    else:
+                        detail_df = pd.DataFrame({
+                            'Metric': ['Overall Risk', 'DeepSurv Risk', 'DeepHit Risk', 
+                                      '12-month Risk', '36-month Risk', '60-month Risk'],
+                            'Value': [f"{results['final_risk']*100:.2f}%",
+                                     f"{results['risk_deepsurv']*100:.2f}%",
+                                     f"{results['risk_deephit']*100:.2f}%",
+                                     f"{results['risk_12m']*100:.2f}%",
+                                     f"{results['risk_36m']*100:.2f}%",
+                                     f"{results['risk_60m']*100:.2f}%"]
+                        })
                     
                     excel_buffer = io.BytesIO()
                     with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                        detail_df.to_excel(writer, sheet_name='预测结果', index=False)
+                        detail_df.to_excel(writer, sheet_name='Results', index=False)
                     excel_data = excel_buffer.getvalue()
                     
                     st.download_button(
-                        label=f"📥 {TEXTS['export_excel']}",
+                        label=f"📥 {get_text('export_excel', lang)}",
                         data=excel_data,
-                        file_name=f"预测结果_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        file_name=f"prediction_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
                 
                 with export_col2:
-                    pdf_data = generate_single_pdf_report(input_data, results)
+                    pdf_data = generate_single_pdf_report(input_data, results, lang)
                     st.download_button(
-                        label=f"📄 {TEXTS['export_pdf']}",
+                        label=f"📄 {get_text('export_pdf', lang)}",
                         data=pdf_data,
-                        file_name=f"预测报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                        file_name=f"prediction_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                         mime="application/pdf"
                     )
     
     # ==================== 批量预测 ====================
     with tab2:
-        st.header(TEXTS["batch_prediction"])
+        st.header(get_text("batch_prediction", lang))
         
         # 下载模板
-        st.subheader(f"1️⃣ {TEXTS['download_template']}")
-        template_df = create_template_csv()
+        st.subheader(f"1️⃣ {get_text('download_template', lang)}")
+        template_df = create_template_csv(lang)
         
         csv_buffer = io.StringIO()
         template_df.to_csv(csv_buffer, index=False, encoding='utf-8-sig')
         csv_data = csv_buffer.getvalue()
         
         st.download_button(
-            label=f"📥 {TEXTS['download_template']} (CSV)",
+            label=f"📥 {get_text('download_template', lang)} (CSV)",
             data=csv_data,
-            file_name="预测模板.csv",
+            file_name=f"prediction_template_{lang}.csv",
             mime="text/csv"
         )
         
-        with st.expander("预览模板"):
+        with st.expander(get_text("preview_template", lang)):
             st.dataframe(template_df, use_container_width=True)
         
         st.markdown("---")
         
         # 上传文件
-        st.subheader(f"2️⃣ {TEXTS['upload_csv']}")
+        st.subheader(f"2️⃣ {get_text('upload_csv', lang)}")
         uploaded_file = st.file_uploader(
-            TEXTS["upload_csv"],
+            get_text("upload_csv", lang),
             type=['csv', 'xlsx'],
-            help="上传包含患者数据的CSV或Excel文件"
+            help="Upload CSV or Excel file | 上传CSV或Excel文件"
         )
         
         if uploaded_file is not None:
@@ -1276,41 +1740,46 @@ def main():
                 else:
                     df = pd.read_excel(uploaded_file)
                 
-                st.success(f"✅ 已加载 {len(df)} 位患者数据")
+                st.success(f"✅ {get_text('loaded_patients', lang)}: {len(df)}")
                 
-                with st.expander("预览数据"):
+                with st.expander(get_text("preview_data", lang)):
                     st.dataframe(df.head(10), use_container_width=True)
                 
                 # 批量预测按钮
-                if st.button(TEXTS["predict_button"], type="primary", key="batch_predict"):
-                    with st.spinner(TEXTS["processing"]):
-                        results_df = predict_batch(df, models)
+                if st.button(get_text("predict_button", lang), type="primary", key="batch_predict"):
+                    with st.spinner(get_text("processing", lang)):
+                        results_df = predict_batch(df, models, lang)
                         
                         st.markdown("---")
-                        st.header(TEXTS["batch_results"])
+                        st.header(get_text("batch_results", lang))
                         
                         # 统计摘要
                         summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
                         
                         total = len(results_df)
-                        high_count = len(results_df[results_df['风险等级'].str.contains('高', na=False)])
-                        medium_count = len(results_df[results_df['风险等级'].str.contains('中', na=False)])
-                        low_count = len(results_df[results_df['风险等级'].str.contains('低', na=False)])
+                        risk_col = get_text("risk_level", lang)
+                        
+                        if risk_col in results_df.columns:
+                            high_count = len(results_df[results_df[risk_col].str.contains('High|高', case=False, na=False)])
+                            medium_count = len(results_df[results_df[risk_col].str.contains('Medium|中', case=False, na=False)])
+                            low_count = len(results_df[results_df[risk_col].str.contains('Low|低', case=False, na=False)])
+                        else:
+                            high_count = medium_count = low_count = 0
                         
                         with summary_col1:
-                            st.metric(TEXTS["total_patients"], total)
+                            st.metric(get_text("total_patients", lang), total)
                         with summary_col2:
-                            st.metric(TEXTS["high_risk_count"], high_count)
+                            st.metric(get_text("high_risk_count", lang), high_count)
                         with summary_col3:
-                            st.metric(TEXTS["medium_risk_count"], medium_count)
+                            st.metric(get_text("medium_risk_count", lang), medium_count)
                         with summary_col4:
-                            st.metric(TEXTS["low_risk_count"], low_count)
+                            st.metric(get_text("low_risk_count", lang), low_count)
                         
                         # 风险分布图
                         chart_col1, chart_col2 = st.columns(2)
                         
                         with chart_col1:
-                            pie_fig = create_risk_distribution_chart(results_df)
+                            pie_fig = create_risk_distribution_chart(results_df, lang)
                             st.plotly_chart(pie_fig, use_container_width=True)
                         
                         with chart_col2:
@@ -1327,38 +1796,43 @@ def main():
                                 ])
                                 
                                 hist_fig.add_vline(x=30, line_dash="dash", line_color="green", 
-                                                   annotation_text="低/中")
+                                                   annotation_text="Low/Medium | 低/中")
                                 hist_fig.add_vline(x=60, line_dash="dash", line_color="red",
-                                                   annotation_text="中/高")
+                                                   annotation_text="Medium/High | 中/高")
                                 
+                                hist_title = "Risk Score Distribution | 风险分数分布"
                                 hist_fig.update_layout(
-                                    title="风险分数分布",
-                                    xaxis_title="风险分数 (%)",
-                                    yaxis_title="患者数量",
+                                    title=hist_title,
+                                    xaxis_title="Risk Score (%) | 风险分数 (%)",
+                                    yaxis_title="Count | 患者数量",
                                     height=400
                                 )
                                 
                                 st.plotly_chart(hist_fig, use_container_width=True)
                         
                         # 显示结果表格
-                        st.subheader("📋 详细结果")
+                        st.subheader(f"📋 {get_text('detailed_results', lang)}")
                         
                         display_df = results_df.drop(columns=[col for col in results_df.columns if col.startswith('_')], errors='ignore')
                         
                         def highlight_risk(row):
-                            if '高' in str(row.get('风险等级', '')):
-                                return ['background-color: #ffcccc'] * len(row)
-                            elif '中' in str(row.get('风险等级', '')):
-                                return ['background-color: #fff3cd'] * len(row)
-                            else:
-                                return ['background-color: #d4edda'] * len(row)
+                            risk_col = get_text("risk_level", lang)
+                            if risk_col in row:
+                                risk_val = str(row[risk_col])
+                                if 'High' in risk_val or '高' in risk_val:
+                                    return ['background-color: #ffcccc'] * len(row)
+                                elif 'Medium' in risk_val or '中' in risk_val:
+                                    return ['background-color: #fff3cd'] * len(row)
+                                else:
+                                    return ['background-color: #d4edda'] * len(row)
+                            return [''] * len(row)
                         
                         styled_df = display_df.style.apply(highlight_risk, axis=1)
                         st.dataframe(styled_df, use_container_width=True, height=400)
                         
                         # 导出选项
                         st.markdown("---")
-                        st.subheader("📥 导出结果")
+                        st.subheader(f"📥 {get_text('export_results', lang)}")
                         
                         export_col1, export_col2, export_col3 = st.columns(3)
                         
@@ -1368,71 +1842,72 @@ def main():
                             csv_export_data = csv_export.getvalue()
                             
                             st.download_button(
-                                label="📥 导出CSV",
+                                label=f"📥 {get_text('export_csv', lang)}",
                                 data=csv_export_data,
-                                file_name=f"批量预测结果_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                file_name=f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                                 mime="text/csv"
                             )
                         
                         with export_col2:
                             excel_buffer = io.BytesIO()
                             with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                                display_df.to_excel(writer, sheet_name='预测结果', index=False)
+                                display_df.to_excel(writer, sheet_name='Results', index=False)
                                 
                                 summary_data = {
-                                    '指标': [TEXTS["total_patients"], TEXTS["high_risk_count"], 
-                                            TEXTS["medium_risk_count"], TEXTS["low_risk_count"]],
-                                    '数值': [total, high_count, medium_count, low_count]
+                                    'Metric': [get_text("total_patients", lang), get_text("high_risk_count", lang), 
+                                              get_text("medium_risk_count", lang), get_text("low_risk_count", lang)],
+                                    'Value': [total, high_count, medium_count, low_count]
                                 }
                                 summary_df = pd.DataFrame(summary_data)
-                                summary_df.to_excel(writer, sheet_name='统计摘要', index=False)
+                                summary_df.to_excel(writer, sheet_name='Summary', index=False)
                             
                             excel_export_data = excel_buffer.getvalue()
                             
                             st.download_button(
-                                label=f"📥 {TEXTS['export_excel']}",
+                                label=f"📥 {get_text('export_excel', lang)}",
                                 data=excel_export_data,
-                                file_name=f"批量预测结果_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                                file_name=f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             )
                         
                         with export_col3:
-                            pdf_data = generate_pdf_report(results_df)
+                            pdf_data = generate_pdf_report(results_df, lang)
                             st.download_button(
-                                label=f"📄 {TEXTS['export_pdf']}",
+                                label=f"📄 {get_text('export_pdf', lang)}",
                                 data=pdf_data,
-                                file_name=f"批量预测报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                                file_name=f"batch_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                                 mime="application/pdf"
                             )
                         
                         # 高风险患者列表
                         if high_count > 0:
                             st.markdown("---")
-                            st.subheader("⚠️ 需关注的高风险患者")
+                            st.subheader(f"⚠️ {get_text('high_risk_attention', lang)}")
                             
-                            high_risk_df = display_df[display_df['风险等级'].str.contains('高', na=False)]
+                            risk_col = get_text("risk_level", lang)
+                            high_risk_df = display_df[display_df[risk_col].str.contains('High|高', case=False, na=False)]
                             
                             st.dataframe(
                                 high_risk_df.style.apply(lambda x: ['background-color: #ffcccc'] * len(x), axis=1),
                                 use_container_width=True
                             )
                             
-                            st.warning(f"⚠️ {high_count} 位患者被评估为高风险，需要密切随访！")
+                            st.warning(f"⚠️ {high_count} {get_text('high_risk_warning', lang)}")
                 
             except Exception as e:
-                st.error(f"文件处理错误: {str(e)}")
-                st.info("请确保您的文件格式与模板一致。")
+                st.error(f"{get_text('file_error', lang)}: {str(e)}")
+                st.info(get_text("file_format_hint", lang))
     
     # 页脚免责声明
     st.markdown("---")
-    st.info(TEXTS["disclaimer"])
+    st.info(get_text("disclaimer", lang))
     
     # 页脚信息
     st.markdown(
         f"""
         <div style='text-align: center; color: gray; padding: 20px;'>
-            <p style='font-size: 16px; font-weight: bold;'>{TEXTS['hospital']}</p>
-            <p>肿瘤复发风险预测系统 v3.0</p>
+            <p style='font-size: 16px; font-weight: bold;'>{get_text('hospital', lang)}</p>
+            <p>Cancer Recurrence Risk Prediction System v3.0 | 肿瘤复发风险预测系统 v3.0</p>
             <p>© 2024 All Rights Reserved</p>
         </div>
         """,
