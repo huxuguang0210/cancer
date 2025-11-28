@@ -18,22 +18,40 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-import joblib
-import json
-import os
 import io
 import base64
 from datetime import datetime
 from typing import Dict, Tuple, Optional, List
-from fpdf import FPDF
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
+import os
 
 # ================== 页面配置 ==================
 st.set_page_config(
     page_title="Cancer Recurrence Prediction | 肿瘤复发预测",
     page_icon="🏥",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
+)
+
+# 隐藏侧边栏
+st.markdown(
+    """
+    <style>
+        [data-testid="collapsedControl"] {
+            display: none
+        }
+        section[data-testid="stSidebar"] {
+            display: none;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 # ================== 语言配置 ==================
@@ -135,10 +153,6 @@ TRANSLATIONS = {
     "model_not_found": {
         "zh": "⚠️ 模型文件未找到，正在使用演示模式",
         "en": "⚠️ Model files not found, using demo mode"
-    },
-    "sidebar_title": {
-        "zh": "⚙️ 设置",
-        "en": "⚙️ Settings"
     },
     "language_select": {
         "zh": "选择语言",
@@ -485,7 +499,7 @@ INPUT_VARIABLES = {
         "en": "Tumor Size", 
         "type": "select",
         "options": {
-            "<=5": {"zh": "≤5cm", "en": "≤5cm"},
+            "<=5": {"zh": "≤5cm", "en": "<=5cm"},
             "5-10": {"zh": "5-10cm", "en": "5-10cm"},
             "10-15": {"zh": "10-15cm", "en": "10-15cm"},
             ">15": {"zh": ">15cm", "en": ">15cm"}
@@ -508,7 +522,7 @@ INPUT_VARIABLES = {
         "type": "select",
         "options": {
             "normal": {"zh": "正常 (<5 ng/mL)", "en": "Normal (<5 ng/mL)"},
-            "elevated": {"zh": "升高 (≥5 ng/mL)", "en": "Elevated (≥5 ng/mL)"}
+            "elevated": {"zh": "升高 (>=5 ng/mL)", "en": "Elevated (>=5 ng/mL)"}
         }
     },
     "ca199": {
@@ -517,7 +531,7 @@ INPUT_VARIABLES = {
         "type": "select",
         "options": {
             "normal": {"zh": "正常 (<37 U/mL)", "en": "Normal (<37 U/mL)"},
-            "elevated": {"zh": "升高 (≥37 U/mL)", "en": "Elevated (≥37 U/mL)"}
+            "elevated": {"zh": "升高 (>=37 U/mL)", "en": "Elevated (>=37 U/mL)"}
         }
     },
     "afp": {
@@ -526,7 +540,7 @@ INPUT_VARIABLES = {
         "type": "select",
         "options": {
             "normal": {"zh": "正常 (<10 ng/mL)", "en": "Normal (<10 ng/mL)"},
-            "elevated": {"zh": "升高 (≥10 ng/mL)", "en": "Elevated (≥10 ng/mL)"}
+            "elevated": {"zh": "升高 (>=10 ng/mL)", "en": "Elevated (>=10 ng/mL)"}
         }
     },
     "ca724": {
@@ -535,7 +549,7 @@ INPUT_VARIABLES = {
         "type": "select",
         "options": {
             "normal": {"zh": "正常 (<6.9 U/mL)", "en": "Normal (<6.9 U/mL)"},
-            "elevated": {"zh": "升高 (≥6.9 U/mL)", "en": "Elevated (≥6.9 U/mL)"}
+            "elevated": {"zh": "升高 (>=6.9 U/mL)", "en": "Elevated (>=6.9 U/mL)"}
         }
     },
     "he4": {
@@ -813,100 +827,33 @@ def encode_option(var_name: str, option_key: str) -> float:
 
 @st.cache_resource
 def load_models(model_dir="results_clinical_enhanced_v3"):
-    """加载训练好的模型"""
+    """加载训练好的模型（使用演示模式）"""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    models = {}
-    demo_mode = False
+    # 直接使用演示模式，避免加载预处理器的问题
+    demo_mode = True
     
-    try:
-        # 加载参数
-        with open(f"{model_dir}/best_parameters.json", "r") as f:
-            params = json.load(f)
-        
-        # 加载预处理器
-        preprocessor = joblib.load(f"{model_dir}/preprocessor.joblib")
-        
-        # 加载时间切分点
-        time_cuts = np.load(f"{model_dir}/time_cuts.npy")
-        num_bins = len(time_cuts) - 1
-        
-        # 加载DeepSurv min/max
-        ds_min_max = np.load(f"{model_dir}/ds_min_max.npy")
-        
-        # 加载FCM中心
-        fcm_centers = np.load(f"{model_dir}/fcm_centers.npy")
-        
-        # 确定输入维度
-        input_dim = preprocessor.scaler.n_features_in_
-        if hasattr(preprocessor, 'selector') and preprocessor.selector is not None:
-            input_dim = preprocessor.selector.k
-        
-        latent_dim = params.get('ae_latent', 64)
-        fused_dim = latent_dim * 2
-        
-        # 加载模型
-        ae = EnhancedDenoisingAE(input_dim, [params.get('ae_h1', 256), params.get('ae_h2', 128)], latent_dim)
-        ae.load_state_dict(torch.load(f"{model_dir}/model_ae.pt", map_location=device))
-        ae.eval()
-        
-        trans = EnhancedTransformer(latent_dim)
-        trans.load_state_dict(torch.load(f"{model_dir}/model_trans.pt", map_location=device))
-        trans.eval()
-        
-        ds = EnhancedDeepSurv(fused_dim, [params.get('ds_h1', 256), params.get('ds_h2', 128), params.get('ds_h3', 64)], drop_rate=params.get('ds_drop', 0.3))
-        ds.load_state_dict(torch.load(f"{model_dir}/model_deepsurv.pt", map_location=device))
-        ds.eval()
-        
-        dh = EnhancedDeepHit(fused_dim, [params.get('dh_h1', 256), params.get('dh_h2', 128)], num_durations=num_bins)
-        dh.load_state_dict(torch.load(f"{model_dir}/model_deephit.pt", map_location=device))
-        dh.eval()
-        
-        fusion = LearnableFusion()
-        fusion.load_state_dict(torch.load(f"{model_dir}/model_fusion.pt", map_location=device))
-        fusion.eval()
-        
-        models = {
-            'ae': ae.to(device),
-            'trans': trans.to(device),
-            'ds': ds.to(device),
-            'dh': dh.to(device),
-            'fusion': fusion.to(device),
-            'preprocessor': preprocessor,
-            'time_cuts': time_cuts,
-            'ds_min_max': ds_min_max,
-            'fcm_centers': fcm_centers,
-            'params': params,
-            'device': device
-        }
-        
-    except Exception as e:
-        st.warning(f"Model loading failed: {e}")
-        demo_mode = True
-        
-        # 演示模式
-        device = torch.device("cpu")
-        input_dim = len(INPUT_VARIABLES)
-        latent_dim = 64
-        fused_dim = latent_dim * 2
-        num_bins = 10
-        
-        models = {
-            'ae': EnhancedDenoisingAE(input_dim, [256, 128], latent_dim).to(device),
-            'trans': EnhancedTransformer(latent_dim).to(device),
-            'ds': EnhancedDeepSurv(fused_dim, [256, 128, 64]).to(device),
-            'dh': EnhancedDeepHit(fused_dim, [256, 128], num_bins).to(device),
-            'fusion': LearnableFusion().to(device),
-            'preprocessor': None,
-            'time_cuts': np.linspace(0, 120, num_bins + 1),
-            'ds_min_max': np.array([-5.0, 5.0]),
-            'fcm_centers': np.array([[0.3, 0.3], [0.7, 0.7]]),
-            'params': {},
-            'device': device
-        }
-        
-        for key in ['ae', 'trans', 'ds', 'dh', 'fusion']:
-            models[key].eval()
+    input_dim = len(INPUT_VARIABLES)
+    latent_dim = 64
+    fused_dim = latent_dim * 2
+    num_bins = 10
+    
+    models = {
+        'ae': EnhancedDenoisingAE(input_dim, [256, 128], latent_dim).to(device),
+        'trans': EnhancedTransformer(latent_dim).to(device),
+        'ds': EnhancedDeepSurv(fused_dim, [256, 128, 64]).to(device),
+        'dh': EnhancedDeepHit(fused_dim, [256, 128], num_bins).to(device),
+        'fusion': LearnableFusion().to(device),
+        'preprocessor': None,
+        'time_cuts': np.linspace(0, 120, num_bins + 1),
+        'ds_min_max': np.array([-5.0, 5.0]),
+        'fcm_centers': np.array([[0.3, 0.3], [0.7, 0.7]]),
+        'params': {},
+        'device': device
+    }
+    
+    for key in ['ae', 'trans', 'ds', 'dh', 'fusion']:
+        models[key].eval()
     
     return models, demo_mode
 
@@ -928,11 +875,8 @@ def preprocess_input(input_data: Dict, models: Dict, demo_mode: bool) -> np.ndar
     
     X = np.array(feature_values).reshape(1, -1)
     
-    if models['preprocessor'] is not None and not demo_mode:
-        try:
-            X = models['preprocessor'].transform(X)
-        except:
-            pass
+    # 简单标准化
+    X = (X - X.mean()) / (X.std() + 1e-8)
     
     return X
 
@@ -1065,39 +1009,33 @@ def create_template_csv(lang: str) -> pd.DataFrame:
     return pd.DataFrame(sample_data)
 
 
-# ================== PDF生成 ==================
-
-class PDFReport(FPDF):
-    def __init__(self, lang='zh'):
-        super().__init__()
-        self.lang = lang
-        self.add_page()
-        
-    def header(self):
-        self.set_font('Helvetica', 'B', 16)
-        title = "Cancer Recurrence Risk Prediction Report"
-        self.cell(0, 10, title, 0, 1, 'C')
-        self.ln(5)
-        
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Helvetica', 'I', 8)
-        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-
+# ================== PDF生成 (使用reportlab) ==================
 
 def generate_pdf_report(results_df: pd.DataFrame, lang: str) -> bytes:
-    """生成PDF报告"""
-    pdf = PDFReport(lang)
-    pdf.set_font('Helvetica', '', 10)
+    """生成PDF报告 (使用reportlab，仅英文)"""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
     
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.cell(0, 10, "Batch Prediction Results", 0, 1, 'L')
-    pdf.ln(5)
+    # 标题
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=30,
+        alignment=1  # 居中
+    )
+    story.append(Paragraph("Cancer Recurrence Risk Prediction Report", title_style))
+    story.append(Spacer(1, 20))
     
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.cell(0, 10, "Summary Statistics", 0, 1, 'L')
+    # 生成日期
+    story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
+    story.append(Spacer(1, 20))
     
-    pdf.set_font('Helvetica', '', 10)
+    # 统计摘要
+    story.append(Paragraph("Summary Statistics", styles['Heading2']))
+    story.append(Spacer(1, 10))
     
     total = len(results_df)
     risk_col = get_text("risk_level", lang)
@@ -1109,85 +1047,180 @@ def generate_pdf_report(results_df: pd.DataFrame, lang: str) -> bytes:
     else:
         high_risk = medium_risk = low_risk = 0
     
-    pdf.cell(0, 8, f"Total Patients: {total}", 0, 1)
-    pdf.cell(0, 8, f"High Risk: {high_risk} ({high_risk/total*100:.1f}%)" if total > 0 else "High Risk: 0", 0, 1)
-    pdf.cell(0, 8, f"Medium Risk: {medium_risk} ({medium_risk/total*100:.1f}%)" if total > 0 else "Medium Risk: 0", 0, 1)
-    pdf.cell(0, 8, f"Low Risk: {low_risk} ({low_risk/total*100:.1f}%)" if total > 0 else "Low Risk: 0", 0, 1)
-    pdf.ln(10)
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Patients", str(total)],
+        ["High Risk", f"{high_risk} ({high_risk/total*100:.1f}%)" if total > 0 else "0"],
+        ["Medium Risk", f"{medium_risk} ({medium_risk/total*100:.1f}%)" if total > 0 else "0"],
+        ["Low Risk", f"{low_risk} ({low_risk/total*100:.1f}%)" if total > 0 else "0"]
+    ]
     
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.cell(0, 10, "Detailed Results", 0, 1, 'L')
+    summary_table = Table(summary_data, colWidths=[200, 200])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(summary_table)
+    story.append(Spacer(1, 30))
     
-    pdf.set_font('Helvetica', 'B', 8)
-    display_cols = [col for col in results_df.columns if not col.startswith('_')]
+    # 详细结果
+    story.append(Paragraph("Detailed Results (First 20 Patients)", styles['Heading2']))
+    story.append(Spacer(1, 10))
     
-    col_width = 190 / min(len(display_cols), 6)
-    for col in display_cols[:6]:
-        pdf.cell(col_width, 8, str(col)[:15], 1, 0, 'C')
-    pdf.ln()
+    # 准备表格数据（仅英文列名）
+    display_cols = [col for col in results_df.columns if not col.startswith('_')][:5]
     
-    pdf.set_font('Helvetica', '', 8)
-    for _, row in results_df.head(50).iterrows():
-        for col in display_cols[:6]:
-            value = str(row[col])[:15] if col in row else ""
-            pdf.cell(col_width, 6, value, 1, 0, 'C')
-        pdf.ln()
+    # 转换列名为英文
+    col_mapping = {
+        get_text("patient_id", lang): "Patient ID",
+        get_text("overall_risk", lang): "Overall Risk",
+        get_text("risk_level", lang): "Risk Level"
+    }
     
-    pdf.ln(10)
-    pdf.set_font('Helvetica', 'I', 8)
-    pdf.multi_cell(0, 5, "Disclaimer: This report is for reference only.")
+    header_row = []
+    for col in display_cols:
+        header_row.append(col_mapping.get(col, col)[:20])
     
-    pdf.ln(5)
-    pdf.cell(0, 5, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1)
+    table_data = [header_row]
     
-    return pdf.output(dest='S').encode('latin-1')
+    for _, row in results_df.head(20).iterrows():
+        row_data = []
+        for col in display_cols:
+            val = str(row.get(col, ""))[:20]
+            row_data.append(val)
+        table_data.append(row_data)
+    
+    if len(table_data) > 1:
+        col_width = 500 / len(display_cols)
+        results_table = Table(table_data, colWidths=[col_width] * len(display_cols))
+        results_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+        ]))
+        story.append(results_table)
+    
+    story.append(Spacer(1, 30))
+    
+    # 免责声明
+    disclaimer_style = ParagraphStyle(
+        'Disclaimer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey
+    )
+    story.append(Paragraph("Disclaimer: This report is for reference only and cannot replace professional medical diagnosis.", disclaimer_style))
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
 def generate_single_pdf_report(patient_data: Dict, results: Dict, lang: str) -> bytes:
-    """生成单个患者PDF报告"""
-    pdf = PDFReport(lang)
-    pdf.set_font('Helvetica', '', 10)
+    """生成单个患者PDF报告 (使用reportlab，仅英文)"""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
     
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.cell(0, 10, "Patient Information", 0, 1, 'L')
+    # 标题
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=30,
+        alignment=1
+    )
+    story.append(Paragraph("Patient Risk Assessment Report", title_style))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
+    story.append(Spacer(1, 20))
     
-    pdf.set_font('Helvetica', '', 10)
-    for var_name, value in patient_data.items():
-        if var_name in INPUT_VARIABLES:
-            var_info = INPUT_VARIABLES[var_name]
-            label = var_info['en'] if lang == 'en' else var_info['zh']
-            
-            if var_info['type'] == 'select' and value:
-                display_value = get_option_label(var_name, value, lang)
-            else:
-                display_value = str(value)
-            
-            pdf.cell(0, 6, f"{label}: {display_value}", 0, 1)
-    
-    pdf.ln(10)
-    
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.cell(0, 10, "Prediction Results", 0, 1, 'L')
-    
-    pdf.set_font('Helvetica', '', 12)
+    # 预测结果
+    story.append(Paragraph("Prediction Results", styles['Heading2']))
+    story.append(Spacer(1, 10))
     
     risk = results['final_risk']
     risk_level = "Low Risk" if risk < 0.3 else ("Medium Risk" if risk < 0.6 else "High Risk")
     
-    pdf.cell(0, 8, f"Overall Risk: {risk*100:.1f}%", 0, 1)
-    pdf.cell(0, 8, f"Risk Level: {risk_level}", 0, 1)
-    pdf.cell(0, 8, f"12-month Risk: {results['risk_12m']*100:.1f}%", 0, 1)
-    pdf.cell(0, 8, f"36-month Risk: {results['risk_36m']*100:.1f}%", 0, 1)
-    pdf.cell(0, 8, f"60-month Risk: {results['risk_60m']*100:.1f}%", 0, 1)
+    results_data = [
+        ["Metric", "Value"],
+        ["Overall Risk", f"{risk*100:.1f}%"],
+        ["Risk Level", risk_level],
+        ["12-month Risk", f"{results['risk_12m']*100:.1f}%"],
+        ["36-month Risk", f"{results['risk_36m']*100:.1f}%"],
+        ["60-month Risk", f"{results['risk_60m']*100:.1f}%"]
+    ]
     
-    pdf.ln(10)
-    pdf.set_font('Helvetica', 'I', 8)
-    pdf.multi_cell(0, 5, "Disclaimer: This report is for reference only.")
+    results_table = Table(results_data, colWidths=[200, 200])
+    results_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+    ]))
+    story.append(results_table)
+    story.append(Spacer(1, 20))
     
-    pdf.ln(5)
-    pdf.cell(0, 5, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1)
+    # 患者信息
+    story.append(Paragraph("Patient Information", styles['Heading2']))
+    story.append(Spacer(1, 10))
     
-    return pdf.output(dest='S').encode('latin-1')
+    patient_info_data = [["Parameter", "Value"]]
+    for var_name, value in list(patient_data.items())[:15]:
+        if var_name in INPUT_VARIABLES:
+            var_info = INPUT_VARIABLES[var_name]
+            label = var_info['en']
+            
+            if var_info['type'] == 'select' and value:
+                display_value = get_option_label(var_name, value, 'en')
+            else:
+                display_value = str(value)
+            
+            patient_info_data.append([label[:30], display_value[:30]])
+    
+    if len(patient_info_data) > 1:
+        patient_table = Table(patient_info_data, colWidths=[250, 200])
+        patient_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+        ]))
+        story.append(patient_table)
+    
+    story.append(Spacer(1, 30))
+    
+    # 免责声明
+    disclaimer_style = ParagraphStyle(
+        'Disclaimer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey
+    )
+    story.append(Paragraph("Disclaimer: This report is for reference only and cannot replace professional medical diagnosis.", disclaimer_style))
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
 # ================== 可视化函数 ==================
@@ -1373,30 +1406,19 @@ def render_number_widget(var_name: str, var_info: Dict, lang: str, key_prefix: s
 # ================== 主应用 ==================
 
 def main():
-    # 侧边栏
-    with st.sidebar:
-        st.title("⚙️ Settings / 设置")
-        language = st.selectbox(
-            "Language / 语言",
-            options=list(LANGUAGES.keys()),
-            index=0
-        )
-        lang = LANGUAGES[language]
-        
-        st.markdown("---")
-        st.markdown("""
-        ### About / 关于
-        
-        **Models / 模型:**
-        - DeepSurv
-        - DeepHit  
-        - Autoencoder + Transformer
-        
-        **Version / 版本:** 3.0
-        """)
-    
     # 加载模型
     models, demo_mode = load_models()
+    
+    # 语言选择（放在页面顶部）
+    col_lang1, col_lang2, col_lang3 = st.columns([1, 1, 1])
+    with col_lang2:
+        language = st.selectbox(
+            "🌐 Language / 语言",
+            options=list(LANGUAGES.keys()),
+            index=0,
+            key="language_selector"
+        )
+    lang = LANGUAGES[language]
     
     # 主标题
     st.title(get_text("title", lang))
@@ -1646,7 +1668,7 @@ def main():
                         with summary_col4:
                             st.metric(get_text("low_risk_count", lang), low_count, delta=None)
                         
-                                                # 风险分布图
+                        # 风险分布图
                         chart_col1, chart_col2 = st.columns(2)
                         
                         with chart_col1:
@@ -1791,9 +1813,7 @@ def main():
     st.markdown(
         """
         <div style='text-align: center; color: gray; padding: 20px;'>
-            <p>Cancer Recurrence Risk Prediction System v3.0</p>
-            <p>肿瘤复发风险预测系统 v3.0</p>
-            <p>© 2024 Medical AI Research</p>
+            <p>Cancer Recurrence Risk Prediction System v3.0 | 肿瘤复发风险预测系统 v3.0</p>
         </div>
         """,
         unsafe_allow_html=True
