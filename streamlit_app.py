@@ -23,8 +23,8 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 import os
-from sklearn.preprocessing import StandardScaler
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
 
 # ================== 页面配置 ==================
 st.set_page_config(
@@ -424,175 +424,253 @@ INPUT_VARIABLES = {
     "he4": {"zh": "HE4", "en": "HE4", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "mild": {"zh": "轻度↑", "en": "Mild↑"}, "elevated": {"zh": "显著↑", "en": "High↑"}}}
 }
 
-# ================== 模型类（修复版）==================
+# ================== 数据预处理类（与训练代码一致）==================
 class DataPreprocessor:
-    def __init__(self, select_k=None):
-        self.scaler = StandardScaler()
+    """数据预处理器 - 与训练代码完全一致"""
+    def __init__(self, n_features_select=None, scaler_type='robust'):
+        self.n_features_select = n_features_select
+        self.scaler_type = scaler_type
+        self.scaler = None
         self.selector = None
-        self.select_k = select_k
-    
-    def fit(self, X, y=None):
-        self.scaler.fit(X)
-        if self.select_k and y is not None:
-            self.selector = SelectKBest(f_classif, k=min(self.select_k, X.shape[1]))
-            self.selector.fit(self.scaler.transform(X), y)
-        return self
+        self.selected_features = None
+        
+    def fit_transform(self, X, y=None, feature_names=None):
+        if self.scaler_type == 'robust':
+            self.scaler = RobustScaler()
+        else:
+            self.scaler = StandardScaler()
+        X_scaled = self.scaler.fit_transform(X)
+        
+        if self.n_features_select and y is not None and self.n_features_select < X.shape[1]:
+            self.selector = SelectKBest(mutual_info_classif, k=self.n_features_select)
+            X_scaled = self.selector.fit_transform(X_scaled, y)
+            if feature_names is not None:
+                mask = self.selector.get_support()
+                self.selected_features = [f for f, m in zip(feature_names, mask) if m]
+        else:
+            self.selected_features = feature_names
+            
+        return X_scaled
     
     def transform(self, X):
-        X_s = self.scaler.transform(X)
-        return self.selector.transform(X_s) if self.selector else X_s
+        X_scaled = self.scaler.transform(X)
+        if self.selector is not None:
+            X_scaled = self.selector.transform(X_scaled)
+        return X_scaled
+
+
+# ================== 模型类（与训练代码完全一致）==================
 
 class SEBlock(nn.Module):
-    def __init__(self, dim, r=4):
+    """Squeeze-and-Excitation Block"""
+    def __init__(self, dim, reduction=4):
         super().__init__()
         self.fc = nn.Sequential(
-            nn.Linear(dim, max(dim//r, 1)), 
-            nn.ReLU(), 
-            nn.Linear(max(dim//r, 1), dim), 
+            nn.Linear(dim, dim // reduction),
+            nn.ReLU(),
+            nn.Linear(dim // reduction, dim),
             nn.Sigmoid()
         )
     
-    def forward(self, x): 
-        return x * self.fc(x)
+    def forward(self, x):
+        scale = self.fc(x)
+        return x * scale
+
 
 class ResidualBlock(nn.Module):
-    def __init__(self, dim, drop=0.3):
+    """残差块 + SE注意力"""
+    def __init__(self, dim, dropout=0.3, use_se=True):
         super().__init__()
         self.block = nn.Sequential(
-            nn.Linear(dim, dim), 
-            nn.BatchNorm1d(dim), 
-            nn.GELU(), 
-            nn.Dropout(drop), 
-            nn.Linear(dim, dim), 
+            nn.Linear(dim, dim),
+            nn.BatchNorm1d(dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(dim, dim),
             nn.BatchNorm1d(dim)
         )
-        self.se = SEBlock(dim)
-        self.act = nn.GELU()
-        self.drop = nn.Dropout(drop)
-    
-    def forward(self, x): 
-        return self.act(x + self.drop(self.se(self.block(x))))
+        self.se = SEBlock(dim) if use_se else nn.Identity()
+        self.activation = nn.GELU()
+        self.dropout = nn.Dropout(dropout)
+        
+    def forward(self, x):
+        out = self.block(x)
+        out = self.se(out)
+        return self.activation(x + self.dropout(out))
+
 
 class EnhancedDeepSurv(nn.Module):
-    def __init__(self, in_dim, h=[256, 128, 64], drop=0.3, n_res=2):
+    """增强版DeepSurv - 与训练代码一致"""
+    def __init__(self, input_dim, hidden_dims=[256, 128, 64], drop_rate=0.3, n_res_blocks=2):
         super().__init__()
-        self.proj = nn.Sequential(
-            nn.Linear(in_dim, h[0]), 
-            nn.BatchNorm1d(h[0]), 
-            nn.GELU(), 
-            nn.Dropout(drop)
+        
+        self.input_proj = nn.Sequential(
+            nn.Linear(input_dim, hidden_dims[0]),
+            nn.BatchNorm1d(hidden_dims[0]),
+            nn.GELU(),
+            nn.Dropout(drop_rate)
         )
-        self.res = nn.ModuleList([ResidualBlock(h[0], drop) for _ in range(n_res)])
-        self.down = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(h[i], h[i+1]), 
-                nn.BatchNorm1d(h[i+1]), 
-                nn.GELU(), 
-                nn.Dropout(drop)
-            ) for i in range(len(h)-1)
+        
+        self.res_blocks = nn.ModuleList([
+            ResidualBlock(hidden_dims[0], drop_rate) for _ in range(n_res_blocks)
         ])
-        self.out = nn.Linear(h[-1], 1)
-    
+        
+        self.down_layers = nn.ModuleList()
+        for i in range(len(hidden_dims) - 1):
+            self.down_layers.append(nn.Sequential(
+                nn.Linear(hidden_dims[i], hidden_dims[i+1]),
+                nn.BatchNorm1d(hidden_dims[i+1]),
+                nn.GELU(),
+                nn.Dropout(drop_rate)
+            ))
+        
+        self.output_layer = nn.Linear(hidden_dims[-1], 1)
+        self._init_weights()
+        
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+                    
     def forward(self, x):
-        x = self.proj(x)
-        for r in self.res: 
-            x = r(x)
-        for d in self.down: 
-            x = d(x)
-        return self.out(x).squeeze(-1)
+        x = self.input_proj(x)
+        for res_block in self.res_blocks:
+            x = res_block(x)
+        for down_layer in self.down_layers:
+            x = down_layer(x)
+        return self.output_layer(x).squeeze(1)
+
 
 class EnhancedDeepHit(nn.Module):
-    def __init__(self, in_dim, h=[256, 128], n_dur=10, drop=0.3):
+    """增强版DeepHit - 与训练代码一致"""
+    def __init__(self, input_dim, hidden_dims=[256, 128, 64], num_durations=10, drop_rate=0.3):
         super().__init__()
-        layers, d = [], in_dim
-        for hd in h: 
-            layers.extend([nn.Linear(d, hd), nn.BatchNorm1d(hd), nn.GELU(), nn.Dropout(drop)])
-            d = hd
-        layers.append(nn.Linear(d, n_dur))
+        
+        layers = []
+        in_d = input_dim
+        for h_dim in hidden_dims:
+            layers.extend([
+                nn.Linear(in_d, h_dim),
+                nn.BatchNorm1d(h_dim),
+                nn.GELU(),
+                nn.Dropout(drop_rate)
+            ])
+            in_d = h_dim
+            
+        layers.append(nn.Linear(in_d, num_durations))
         self.net = nn.Sequential(*layers)
-    
-    def forward(self, x): 
+        self._init_weights()
+        
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+                    
+    def forward(self, x):
         return torch.softmax(self.net(x), dim=1)
 
-# ========== 关键修复：完整的自编码器类（包含decoder）==========
+
 class EnhancedDenoisingAE(nn.Module):
-    """完整的去噪自编码器，包含encoder和decoder"""
-    def __init__(self, in_dim, h=[256, 128], lat=64, drop=0.2):
+    """增强版去噪自编码器 - 与训练代码一致"""
+    def __init__(self, input_dim, hidden_dims=[256, 128], latent_dim=64, dropout=0.2):
         super().__init__()
         
-        # Encoder
-        enc_layers = []
-        d = in_dim
-        for hd in h:
-            enc_layers.extend([
-                nn.Linear(d, hd),
-                nn.BatchNorm1d(hd),
+        # 编码器
+        encoder_layers = []
+        in_d = input_dim
+        for h_dim in hidden_dims:
+            encoder_layers.extend([
+                nn.Linear(in_d, h_dim),
+                nn.BatchNorm1d(h_dim),
                 nn.GELU(),
-                nn.Dropout(drop)
+                nn.Dropout(dropout)
             ])
-            d = hd
-        enc_layers.append(nn.Linear(d, lat))
-        self.encoder = nn.Sequential(*enc_layers)
+            in_d = h_dim
+        encoder_layers.append(nn.Linear(in_d, latent_dim))
+        self.encoder = nn.Sequential(*encoder_layers)
         
-        # Decoder (镜像结构)
-        dec_layers = []
-        d = lat
-        for hd in reversed(h):
-            dec_layers.extend([
-                nn.Linear(d, hd),
-                nn.BatchNorm1d(hd),
+        # 解码器
+        decoder_layers = []
+        in_d = latent_dim
+        for h_dim in reversed(hidden_dims):
+            decoder_layers.extend([
+                nn.Linear(in_d, h_dim),
+                nn.BatchNorm1d(h_dim),
                 nn.GELU(),
-                nn.Dropout(drop)
+                nn.Dropout(dropout)
             ])
-            d = hd
-        dec_layers.append(nn.Linear(d, in_dim))
-        self.decoder = nn.Sequential(*dec_layers)
+            in_d = h_dim
+        decoder_layers.append(nn.Linear(in_d, input_dim))
+        self.decoder = nn.Sequential(*decoder_layers)
+        
+    def forward(self, x, noise_factor=0.1):
+        if self.training and noise_factor > 0:
+            noise = torch.randn_like(x) * noise_factor
+            x_noisy = x + noise
+        else:
+            x_noisy = x
+        z = self.encoder(x_noisy)
+        recon = self.decoder(z)
+        return recon, z
     
     def encode(self, x):
         return self.encoder(x)
-    
-    def decode(self, z):
-        return self.decoder(z)
-    
-    def forward(self, x):
-        z = self.encode(x)
-        return self.decode(z), z
+
 
 class EnhancedTransformer(nn.Module):
-    def __init__(self, lat, n_h=4, ff=256, n_l=2, drop=0.1):
+    """增强版Transformer - 与训练代码完全一致"""
+    def __init__(self, latent_dim, n_heads=4, ff_dim=256, n_layers=2, dropout=0.1):
         super().__init__()
-        # 确保lat能被n_h整除
-        while lat % n_h != 0 and n_h > 1: 
-            n_h -= 1
-        # 使用与保存模型一致的属性名称
-        self.input_norm = nn.LayerNorm(lat)
-        self.transformer = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(lat, n_h, ff, drop, 'gelu', batch_first=True), 
-            n_l
+        
+        # 确保latent_dim能被n_heads整除
+        while latent_dim % n_heads != 0 and n_heads > 1:
+            n_heads -= 1
+        self.n_heads = n_heads
+        
+        # 使用与训练代码一致的属性名称
+        self.input_norm = nn.LayerNorm(latent_dim)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=latent_dim, nhead=n_heads, dim_feedforward=ff_dim,
+            dropout=dropout, activation='gelu', batch_first=True
         )
-        self.output_proj = nn.Sequential(nn.Linear(lat, lat), nn.GELU(), nn.Dropout(drop))
-    
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
+        self.output_proj = nn.Sequential(
+            nn.Linear(latent_dim, latent_dim),
+            nn.GELU(),
+            nn.Dropout(dropout)
+        )
+        
     def forward(self, z):
-        if z.dim() == 2: 
+        if z.dim() == 2:
             z = z.unsqueeze(1)
-        return self.output_proj(self.transformer(self.input_norm(z)).squeeze(1))
+        z = self.input_norm(z)
+        z = self.transformer(z)
+        z = z.squeeze(1)
+        return self.output_proj(z)
+
 
 class LearnableFusion(nn.Module):
-    def __init__(self, in_d=2, h=32):
+    """可学习融合网络 - 与训练代码一致"""
+    def __init__(self, input_dim=2, hidden_dim=32):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(in_d, h), 
-            nn.BatchNorm1d(h), 
-            nn.ReLU(), 
-            nn.Dropout(0.2), 
-            nn.Linear(h, h), 
-            nn.ReLU(), 
-            nn.Linear(h, 1), 
+            nn.Linear(input_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1),
             nn.Sigmoid()
         )
-    
-    def forward(self, x): 
-        return self.net(x).squeeze(-1)
+        
+    def forward(self, x):
+        return self.net(x).squeeze(1)
+
 
 # ================== 工具函数 ==================
 def get_text(key, lang): 
@@ -607,7 +685,7 @@ def encode_option(var, opt):
 
 @st.cache_resource
 def load_models(model_dir="results_clinical_enhanced_v3"):
-    """加载模型，并返回详细的加载状态日志"""
+    """加载模型，返回详细的加载状态日志"""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = {}
     ok = False
@@ -657,50 +735,51 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             
             # 确定输入维度
             in_dim = prep.scaler.n_features_in_
-            if hasattr(prep, 'selector') and prep.selector: 
-                in_dim = getattr(prep.selector, 'k', in_dim)
+            if hasattr(prep, 'selector') and prep.selector is not None:
+                in_dim = prep.selector.k if hasattr(prep.selector, 'k') else in_dim
             load_log.append(f"  📊 输入维度: {in_dim}")
             
-            lat = params.get('ae_latent', 64)
-            fused = lat * 2
-            load_log.append(f"  📊 潜在维度: {lat}, 融合维度: {fused}")
-            
-            # 获取隐藏层参数
+            # 获取模型参数
             ae_h1 = params.get('ae_h1', 256)
             ae_h2 = params.get('ae_h2', 128)
-            load_log.append(f"  📊 AE隐藏层: [{ae_h1}, {ae_h2}]")
+            lat = params.get('ae_latent', 64)
+            fused = lat * 2  # latent + transformer output
             
-            # 加载自编码器（使用修复后的完整类）
+            load_log.append(f"  📊 AE隐藏层: [{ae_h1}, {ae_h2}], 潜在维度: {lat}")
+            load_log.append(f"  📊 融合特征维度: {fused}")
+            
+            # 加载自编码器
             ae = EnhancedDenoisingAE(in_dim, [ae_h1, ae_h2], lat)
             ae.load_state_dict(torch.load(os.path.join(model_dir, "model_ae.pt"), map_location=device))
             ae.eval()
-            load_log.append("  ✅ AutoEncoder 加载成功（包含encoder+decoder）")
+            load_log.append("  ✅ AutoEncoder 加载成功")
             
             # 加载Transformer
-            trans = EnhancedTransformer(lat)
+            trans = EnhancedTransformer(lat, n_heads=4, ff_dim=256, n_layers=2)
             trans.load_state_dict(torch.load(os.path.join(model_dir, "model_trans.pt"), map_location=device))
             trans.eval()
             load_log.append("  ✅ Transformer 加载成功")
             
             # 加载DeepSurv
-            ds = EnhancedDeepSurv(
-                fused, 
-                [params.get('ds_h1', 256), params.get('ds_h2', 128), params.get('ds_h3', 64)], 
-                params.get('ds_drop', 0.3)
-            )
+            ds_h1 = params.get('ds_h1', 256)
+            ds_h2 = params.get('ds_h2', 128)
+            ds_h3 = params.get('ds_h3', 64)
+            ds_drop = params.get('ds_drop', 0.3)
+            
+            ds = EnhancedDeepSurv(fused, [ds_h1, ds_h2, ds_h3], drop_rate=ds_drop)
             ds.load_state_dict(torch.load(os.path.join(model_dir, "model_deepsurv.pt"), map_location=device))
             ds.eval()
-            load_log.append("  ✅ DeepSurv 加载成功")
+            load_log.append(f"  ✅ DeepSurv 加载成功 (hidden: [{ds_h1}, {ds_h2}, {ds_h3}])")
             
             # 加载DeepHit
-            dh = EnhancedDeepHit(
-                fused, 
-                [params.get('dh_h1', 256), params.get('dh_h2', 128)], 
-                len(time_cuts) - 1
-            )
+            dh_h1 = params.get('dh_h1', 256)
+            dh_h2 = params.get('dh_h2', 128)
+            n_durations = len(time_cuts) - 1
+            
+            dh = EnhancedDeepHit(fused, [dh_h1, dh_h2], n_durations)
             dh.load_state_dict(torch.load(os.path.join(model_dir, "model_deephit.pt"), map_location=device))
             dh.eval()
-            load_log.append("  ✅ DeepHit 加载成功")
+            load_log.append(f"  ✅ DeepHit 加载成功 (hidden: [{dh_h1}, {dh_h2}], durations: {n_durations})")
             
             # 加载Fusion
             fusion = LearnableFusion()
@@ -717,7 +796,8 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
                 'prep': prep, 
                 'time_cuts': time_cuts, 
                 'ds_mm': ds_mm, 
-                'device': device
+                'device': device,
+                'params': params
             }
             ok = True
             load_log.append("\n🎉 所有模型加载成功！")
@@ -745,7 +825,8 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             'prep': None, 
             'time_cuts': np.linspace(0, 120, 11), 
             'ds_mm': np.array([-5., 5.]), 
-            'device': device
+            'device': device,
+            'params': {}
         }
         for k in ['ae', 'trans', 'ds', 'dh', 'fusion']: 
             models[k].eval()
@@ -753,6 +834,7 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
     models['ok'] = ok
     models['log'] = load_log
     return models
+
 
 def preprocess(data, models):
     """将输入数据转换为模型输入张量"""
@@ -766,15 +848,26 @@ def preprocess(data, models):
     
     X = np.array(feats).reshape(1, -1)
     
-    if models.get('prep'):
+    if models.get('prep') is not None:
         try: 
             X = models['prep'].transform(X)
         except Exception as e:
+            st.warning(f"预处理警告: {e}")
             X = (X - X.mean()) / (X.std() + 1e-8)
     else: 
         X = (X - X.mean()) / (X.std() + 1e-8)
     
     return X
+
+
+def normalize_risk(risk_score, min_val, max_val):
+    """归一化风险分数"""
+    range_val = max_val - min_val
+    if range_val == 0:
+        return np.full_like(risk_score, 0.5)
+    normalized = (risk_score - min_val) / range_val
+    return np.clip(normalized, 0, 1)
+
 
 def predict(data, models):
     """执行预测并返回结果"""
@@ -798,11 +891,13 @@ def predict(data, models):
         
         # 归一化DeepSurv输出
         mn, mx = models['ds_mm']
-        p_ds = np.clip((r_ds - mn) / (mx - mn + 1e-8), 0, 1)
+        p_ds = normalize_risk(np.array([r_ds]), mn, mx)[0]
         
         # 计算累积风险
         cif = np.cumsum(pmf)
         surv = 1 - cif
+        
+        # 中位时间点的DeepHit风险
         r_dh = cif[len(pmf) // 2]
         
         # 融合预测
@@ -815,18 +910,25 @@ def predict(data, models):
     tp = (tc[:-1] + tc[1:]) / 2
     n = len(cif)
     
+    # 计算特定时间点的风险
+    def get_risk_at_time(target_time):
+        idx = np.searchsorted(tp, target_time)
+        idx = min(max(idx, 0), n - 1)
+        return float(cif[idx])
+    
     return {
         'risk': float(final), 
         'surv': surv, 
         'cif': cif, 
         'tp': tp, 
-        'r12': float(cif[min(int(n * 0.1), n - 1)]), 
-        'r36': float(cif[min(int(n * 0.3), n - 1)]), 
-        'r60': float(cif[min(int(n * 0.5), n - 1)]),
+        'r12': get_risk_at_time(12), 
+        'r36': get_risk_at_time(36), 
+        'r60': get_risk_at_time(60),
         'p_ds': float(p_ds),
         'r_dh': float(r_dh),
         'raw_ds': float(r_ds)
     }
+
 
 def batch_predict(df, models, lang):
     """批量预测"""
@@ -869,6 +971,7 @@ def batch_predict(df, models, lang):
     prog.empty()
     return pd.DataFrame(results)
 
+
 def make_template(lang):
     """生成批量预测模板"""
     cols = [get_text("patient_id", lang)] + [INPUT_VARIABLES[v][lang] for v in INPUT_VARIABLES]
@@ -881,6 +984,7 @@ def make_template(lang):
             data[cols[i + 1]] = [info.get('default', 0)] * 3
     
     return pd.DataFrame(data)
+
 
 # ================== 图表函数 ==================
 def make_gauge(risk, lang):
@@ -916,6 +1020,7 @@ def make_gauge(risk, lang):
     fig.update_layout(height=350, margin=dict(l=30, r=30, t=100, b=30), paper_bgcolor='rgba(0,0,0,0)')
     return fig
 
+
 def make_time_bar(r12, r36, r60, lang):
     """创建时间点风险柱状图"""
     labels = [get_text('month_12', lang), get_text('month_36', lang), get_text('month_60', lang)]
@@ -947,6 +1052,7 @@ def make_time_bar(r12, r36, r60, lang):
         plot_bgcolor='white'
     )
     return fig
+
 
 def make_survival_chart(surv, tp, lang):
     """创建生存曲线图"""
@@ -985,6 +1091,7 @@ def make_survival_chart(surv, tp, lang):
     )
     return fig
 
+
 def make_cumulative_chart(cif, tp, lang):
     """创建累积风险曲线图"""
     fig = go.Figure()
@@ -1022,6 +1129,7 @@ def make_cumulative_chart(cif, tp, lang):
     )
     return fig
 
+
 def make_pie(df, lang):
     """创建风险分布饼图"""
     rc = get_text("risk_level", lang)
@@ -1046,6 +1154,7 @@ def make_pie(df, lang):
         legend=dict(font=dict(size=14), orientation='h', yanchor='bottom', y=-0.12, xanchor='center', x=0.5)
     )
     return fig
+
 
 # ================== PDF生成 ==================
 def make_pdf(df, lang):
@@ -1094,6 +1203,7 @@ def make_pdf(df, lang):
     buf.seek(0)
     return buf.getvalue()
 
+
 def make_single_pdf(res, lang):
     """生成单例预测PDF报告"""
     buf = io.BytesIO()
@@ -1138,6 +1248,7 @@ def make_single_pdf(res, lang):
     buf.seek(0)
     return buf.getvalue()
 
+
 # ================== 输入控件 ==================
 def sel_widget(v, info, lang, pre=""):
     """选择框控件"""
@@ -1147,6 +1258,7 @@ def sel_widget(v, info, lang, pre=""):
         format_func=lambda x: info['options'][x][lang], 
         key=f"{pre}{v}"
     )
+
 
 def num_widget(v, info, lang, pre=""):
     """数字输入控件"""
@@ -1158,6 +1270,7 @@ def num_widget(v, info, lang, pre=""):
         float(info.get('default', 0)), 
         key=f"{pre}{v}"
     )
+
 
 # ================== 主函数 ==================
 def main():
@@ -1291,7 +1404,6 @@ def main():
                     
                     with col_d1:
                         st.markdown(f"**{get_text('input_data', lang)}:**")
-                        # 显示编码后的数值
                         encoded_data = {}
                         for v in INPUT_VARIABLES:
                             info = INPUT_VARIABLES[v]
@@ -1532,6 +1644,7 @@ def main():
             </div>
         </div>
         """, unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     main()
