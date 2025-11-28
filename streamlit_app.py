@@ -559,40 +559,23 @@ class EnhancedDenoisingAE(nn.Module):
         return self.decode(z), z
 
 class EnhancedTransformer(nn.Module):
-    """Transformer特征增强模块 - 与训练时的结构保持一致"""
     def __init__(self, lat, n_h=4, ff=256, n_l=2, drop=0.1):
         super().__init__()
         # 确保lat能被n_h整除
-        original_n_h = n_h
         while lat % n_h != 0 and n_h > 1: 
             n_h -= 1
-        
         # 使用与保存模型一致的属性名称
         self.input_norm = nn.LayerNorm(lat)
         self.transformer = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(
-                d_model=lat, 
-                nhead=n_h, 
-                dim_feedforward=ff, 
-                dropout=drop, 
-                activation='gelu', 
-                batch_first=True
-            ), 
-            num_layers=n_l
+            nn.TransformerEncoderLayer(lat, n_h, ff, drop, 'gelu', batch_first=True), 
+            n_l
         )
-        self.output_proj = nn.Sequential(
-            nn.Linear(lat, lat), 
-            nn.GELU(), 
-            nn.Dropout(drop)
-        )
+        self.output_proj = nn.Sequential(nn.Linear(lat, lat), nn.GELU(), nn.Dropout(drop))
     
     def forward(self, z):
         if z.dim() == 2: 
             z = z.unsqueeze(1)
-        z = self.input_norm(z)
-        z = self.transformer(z)
-        z = z.squeeze(1)
-        return self.output_proj(z)
+        return self.output_proj(self.transformer(self.input_norm(z)).squeeze(1))
 
 class LearnableFusion(nn.Module):
     def __init__(self, in_d=2, h=32):
