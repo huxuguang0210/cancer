@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 import joblib
 import json
 import io
+import base64
 from datetime import datetime
 from typing import Dict
 from reportlab.lib.pagesizes import A4
@@ -33,6 +34,23 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# ================== Logo配置 ==================
+# 盛京医院Logo (Base64编码) - 请替换为实际logo
+# 可以将logo.png放在同目录下，使用以下代码读取：
+# with open("logo.png", "rb") as f:
+#     LOGO_BASE64 = base64.b64encode(f.read()).decode()
+
+# 这里使用一个占位符logo（医院图标SVG）
+LOGO_SVG = """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="60" height="60">
+  <circle cx="50" cy="50" r="48" fill="#1a5276" stroke="#f1c40f" stroke-width="3"/>
+  <text x="50" y="35" text-anchor="middle" fill="white" font-size="14" font-weight="bold">盛京</text>
+  <text x="50" y="52" text-anchor="middle" fill="white" font-size="14" font-weight="bold">医院</text>
+  <text x="50" y="72" text-anchor="middle" fill="#f1c40f" font-size="8">SHENGJING</text>
+</svg>
+"""
+LOGO_BASE64 = base64.b64encode(LOGO_SVG.encode()).decode()
+
 # ================== CSS样式 ==================
 st.markdown("""
 <style>
@@ -43,100 +61,154 @@ st.markdown("""
     header {visibility: hidden;}
     
     .main .block-container {
-        padding: 0.5rem 2rem 2rem 2rem;
-        max-width: 1600px;
+        padding: 0.5rem 1.5rem 2rem 1.5rem;
+        max-width: 100%;
     }
     
+    /* 顶部栏 */
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .logo-section {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .logo-section img {
+        height: 55px;
+        width: auto;
+    }
+    .logo-text h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #1a5276;
+        font-weight: 700;
+    }
+    .logo-text p {
+        margin: 0;
+        font-size: 0.75rem;
+        color: #666;
+    }
+    
+    /* 医院标题头 */
     .hospital-header {
         background: linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #1a5276 100%);
-        padding: 1rem 2rem;
-        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
         margin-bottom: 1rem;
         box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+    }
+    .header-logo {
+        background: white;
+        border-radius: 50%;
+        padding: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .header-logo img {
+        height: 60px;
+        width: 60px;
+        border-radius: 50%;
+    }
+    .header-text {
         text-align: center;
     }
-    .hospital-header h1 {
+    .header-text h1 {
         color: white;
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         margin: 0 0 0.2rem 0;
         font-weight: 600;
     }
-    .hospital-header .subtitle {
+    .header-text .subtitle {
         color: rgba(255,255,255,0.9);
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         margin: 0;
     }
-    .hospital-header .hospital-name {
+    .header-text .hospital-name {
         color: #f1c40f;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 600;
-        margin-top: 0.3rem;
+        margin-top: 0.2rem;
     }
     
+    /* 模块卡片 */
     .module-card {
         background: #ffffff;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border-radius: 8px;
+        padding: 0.8rem;
+        margin-bottom: 0.8rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         border: 1px solid #e8e8e8;
     }
-    
     .module-title {
         background: linear-gradient(90deg, #3498db, #2980b9);
         color: white;
-        padding: 0.5rem 0.8rem;
-        border-radius: 6px;
-        margin: -1rem -1rem 0.8rem -1rem;
+        padding: 0.4rem 0.6rem;
+        border-radius: 5px;
+        margin: -0.8rem -0.8rem 0.6rem -0.8rem;
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
     .module-title.pathology { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
     .module-title.surgery { background: linear-gradient(90deg, #e67e22, #d35400); }
     .module-title.markers { background: linear-gradient(90deg, #1abc9c, #16a085); }
     
+    /* 结果区域 - 全宽 */
     .result-section {
-        background: #f8f9fa;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.2rem;
         margin: 1rem 0;
-        border: 2px solid #e0e0e0;
+        border: 2px solid #dee2e6;
     }
     .result-title {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
         font-weight: bold;
         color: #2c3e50;
         margin-bottom: 1rem;
         text-align: center;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #3498db;
     }
     
-    .chart-box {
+    /* 图表盒子 */
+    .chart-container {
         background: white;
         border-radius: 10px;
-        padding: 0.8rem;
+        padding: 1rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         border: 1px solid #e8e8e8;
-        margin-bottom: 0.5rem;
+        height: 100%;
     }
     
+    /* 建议卡片 */
     .advice-box {
         background: white;
         border-radius: 10px;
-        padding: 1.2rem;
+        padding: 1rem;
         margin: 1rem 0;
         border-left: 5px solid;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
-    .advice-box.low { border-color: #28a745; background: #f8fff8; }
-    .advice-box.medium { border-color: #ffc107; background: #fffef8; }
-    .advice-box.high { border-color: #dc3545; background: #fff8f8; }
-    .advice-box h4 { margin: 0 0 0.8rem 0; font-size: 1.1rem; color: #2c3e50; }
+    .advice-box.low { border-color: #28a745; background: linear-gradient(90deg, #f0fff0, white); }
+    .advice-box.medium { border-color: #ffc107; background: linear-gradient(90deg, #fffef0, white); }
+    .advice-box.high { border-color: #dc3545; background: linear-gradient(90deg, #fff0f0, white); }
+    .advice-box h4 { margin: 0 0 0.6rem 0; font-size: 1rem; color: #2c3e50; }
     
+    /* 按钮 */
     .stButton > button {
         background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
         color: white;
         border: none;
-        padding: 0.7rem 2rem;
+        padding: 0.6rem 2rem;
         font-size: 1rem;
         font-weight: 600;
         border-radius: 25px;
@@ -147,29 +219,40 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
     }
     
-    .stSelectbox label { font-weight: 500; color: #2c3e50; font-size: 0.85rem; }
+    /* 选择框 */
+    .stSelectbox label { font-weight: 500; color: #2c3e50; font-size: 0.8rem; }
+    .stSelectbox > div > div { font-size: 0.85rem; }
     
-    .stTabs [data-baseweb="tab-list"] { gap: 0; background: #f8f9fa; border-radius: 8px; padding: 4px; }
-    .stTabs [data-baseweb="tab"] { background: transparent; border-radius: 6px; padding: 10px 20px; font-weight: 600; }
+    /* 标签页 */
+    .stTabs [data-baseweb="tab-list"] { gap: 0; background: #f8f9fa; border-radius: 8px; padding: 3px; }
+    .stTabs [data-baseweb="tab"] { background: transparent; border-radius: 5px; padding: 8px 16px; font-weight: 600; font-size: 0.9rem; }
     .stTabs [aria-selected="true"] { background: linear-gradient(135deg, #3498db, #2980b9); color: white !important; }
     
+    /* 指标卡片 */
     [data-testid="metric-container"] {
         background: white;
-        padding: 0.8rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        padding: 0.6rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         border: 1px solid #e8e8e8;
     }
     
+    /* 页脚 */
     .footer {
         background: linear-gradient(135deg, #1a5276, #2980b9);
         padding: 1rem;
         border-radius: 10px;
-        margin-top: 2rem;
+        margin-top: 1.5rem;
         text-align: center;
         color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
     }
-    .footer .hospital-name { color: #f1c40f; font-weight: 600; }
+    .footer img { height: 40px; width: 40px; border-radius: 50%; background: white; padding: 3px; }
+    .footer-text .hospital-name { color: #f1c40f; font-weight: 600; font-size: 0.95rem; }
+    .footer-text .version { font-size: 0.8rem; opacity: 0.9; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -180,11 +263,12 @@ TRANSLATIONS = {
     "title": {"zh": "肿瘤复发风险预测系统", "en": "Cancer Recurrence Prediction System"},
     "subtitle": {"zh": "临床决策支持平台", "en": "Clinical Decision Support Platform"},
     "hospital": {"zh": "中国医科大学附属盛京医院", "en": "Shengjing Hospital of China Medical University"},
+    "hospital_short": {"zh": "盛京医院", "en": "Shengjing Hospital"},
     "single_patient": {"zh": "单例预测", "en": "Single Prediction"},
     "batch_prediction": {"zh": "批量预测", "en": "Batch Prediction"},
-    "basic_info": {"zh": "基本信息", "en": "Basic Information"},
-    "surgical_info": {"zh": "手术信息", "en": "Surgical Information"},
-    "pathology_info": {"zh": "病理信息", "en": "Pathology Information"},
+    "basic_info": {"zh": "基本信息", "en": "Basic Info"},
+    "surgical_info": {"zh": "手术信息", "en": "Surgical Info"},
+    "pathology_info": {"zh": "病理信息", "en": "Pathology Info"},
     "tumor_markers": {"zh": "肿瘤标志物", "en": "Tumor Markers"},
     "predict_button": {"zh": "开始风险评估", "en": "Start Assessment"},
     "prediction_results": {"zh": "风险评估结果", "en": "Risk Assessment Results"},
@@ -194,7 +278,7 @@ TRANSLATIONS = {
     "medium_risk": {"zh": "中危", "en": "Intermediate"},
     "high_risk": {"zh": "高危", "en": "High Risk"},
     "survival_curve": {"zh": "无复发生存曲线", "en": "Recurrence-Free Survival"},
-    "cumulative_risk_curve": {"zh": "累积复发风险", "en": "Cumulative Risk"},
+    "cumulative_risk_curve": {"zh": "累积复发风险曲线", "en": "Cumulative Risk Curve"},
     "time_risk": {"zh": "各时间点复发风险", "en": "Time-Point Risk"},
     "clinical_advice": {"zh": "临床随访建议", "en": "Follow-up Recommendations"},
     "disclaimer": {"zh": "⚠️ 提示：本系统预测结果仅供临床参考，最终诊疗方案请由主治医师综合判断后确定。", 
@@ -245,32 +329,32 @@ TRANSLATIONS = {
 # ================== 输入变量 ==================
 INPUT_VARIABLES = {
     "age": {"zh": "年龄", "en": "Age", "type": "number", "min": 18, "max": 100, "default": 50, "unit": {"zh": "岁", "en": "yrs"}},
-    "family_cancer_history": {"zh": "肿瘤家族史", "en": "Family History", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "sexual_history": {"zh": "性生活史", "en": "Sexual History", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "parity": {"zh": "孕产次", "en": "Parity", "type": "select", "options": {"0": {"zh": "未育", "en": "0"}, "1": {"zh": "1次", "en": "1"}, "2": {"zh": "2次", "en": "2"}, "3": {"zh": "≥3次", "en": "≥3"}}},
+    "family_cancer_history": {"zh": "家族史", "en": "Family Hx", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
+    "sexual_history": {"zh": "性生活史", "en": "Sexual Hx", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
+    "parity": {"zh": "孕产次", "en": "Parity", "type": "select", "options": {"0": {"zh": "未育", "en": "0"}, "1": {"zh": "1次", "en": "1"}, "2": {"zh": "2次", "en": "2"}, "3": {"zh": "≥3", "en": "≥3"}}},
     "menopausal_status": {"zh": "月经状态", "en": "Menopause", "type": "select", "options": {"premenopausal": {"zh": "绝经前", "en": "Pre"}, "postmenopausal": {"zh": "绝经后", "en": "Post"}}},
-    "comorbidities": {"zh": "合并症", "en": "Comorbidities", "type": "select", "options": {"no": {"zh": "无", "en": "None"}, "hypertension": {"zh": "高血压", "en": "HTN"}, "diabetes": {"zh": "糖尿病", "en": "DM"}, "cardiovascular": {"zh": "心血管病", "en": "CVD"}, "multiple": {"zh": "多种", "en": "Multiple"}}},
-    "smoking_drinking_history": {"zh": "烟酒史", "en": "Smoking/Alcohol", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "smoking": {"zh": "吸烟", "en": "Smoking"}, "drinking": {"zh": "饮酒", "en": "Alcohol"}, "both": {"zh": "均有", "en": "Both"}}},
+    "comorbidities": {"zh": "合并症", "en": "Comorbidities", "type": "select", "options": {"no": {"zh": "无", "en": "None"}, "hypertension": {"zh": "高血压", "en": "HTN"}, "diabetes": {"zh": "糖尿病", "en": "DM"}, "cardiovascular": {"zh": "心血管", "en": "CVD"}, "multiple": {"zh": "多种", "en": "Multi"}}},
+    "smoking_drinking_history": {"zh": "烟酒史", "en": "Smoke/Alcohol", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "smoking": {"zh": "吸烟", "en": "Smoke"}, "drinking": {"zh": "饮酒", "en": "Alcohol"}, "both": {"zh": "均有", "en": "Both"}}},
     "receive_estrogens": {"zh": "激素暴露", "en": "Hormone", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "hrt": {"zh": "HRT", "en": "HRT"}, "contraceptive": {"zh": "避孕药", "en": "OCP"}, "other": {"zh": "其他", "en": "Other"}}},
-    "ovulation_induction": {"zh": "促排卵史", "en": "Ovulation Induction", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "presenting_symptom": {"zh": "主诉症状", "en": "Symptom", "type": "select", "options": {"asymptomatic": {"zh": "无症状", "en": "None"}, "abdominal_pain": {"zh": "腹痛", "en": "Pain"}, "bloating": {"zh": "腹胀", "en": "Bloating"}, "mass": {"zh": "包块", "en": "Mass"}, "bleeding": {"zh": "出血", "en": "Bleeding"}, "other": {"zh": "其他", "en": "Other"}}},
-    "surgical_route": {"zh": "手术途径", "en": "Surgery Type", "type": "select", "options": {"laparoscopy": {"zh": "腹腔镜", "en": "Lap"}, "laparotomy": {"zh": "开腹", "en": "Open"}, "robotic": {"zh": "机器人", "en": "Robot"}, "conversion": {"zh": "中转", "en": "Conv"}}},
+    "ovulation_induction": {"zh": "促排卵史", "en": "Ovul Induc", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
+    "presenting_symptom": {"zh": "主诉症状", "en": "Symptom", "type": "select", "options": {"asymptomatic": {"zh": "无症状", "en": "None"}, "abdominal_pain": {"zh": "腹痛", "en": "Pain"}, "bloating": {"zh": "腹胀", "en": "Bloat"}, "mass": {"zh": "包块", "en": "Mass"}, "bleeding": {"zh": "出血", "en": "Bleed"}, "other": {"zh": "其他", "en": "Other"}}},
+    "surgical_route": {"zh": "手术途径", "en": "Surgery", "type": "select", "options": {"laparoscopy": {"zh": "腹腔镜", "en": "Lap"}, "laparotomy": {"zh": "开腹", "en": "Open"}, "robotic": {"zh": "机器人", "en": "Robot"}, "conversion": {"zh": "中转", "en": "Conv"}}},
     "tumor_envelope_integrity": {"zh": "包膜完整", "en": "Capsule", "type": "select", "options": {"intact": {"zh": "完整", "en": "Intact"}, "ruptured_before": {"zh": "术前破", "en": "Pre-rupt"}, "ruptured_during": {"zh": "术中破", "en": "Intra-rupt"}}},
-    "fertility_sparing_surgery": {"zh": "保留生育", "en": "Fertility Sparing", "type": "select", "options": {"no": {"zh": "否", "en": "No"}, "yes": {"zh": "是", "en": "Yes"}}},
-    "completeness_of_surgery": {"zh": "手术完整性", "en": "Completeness", "type": "select", "options": {"incomplete": {"zh": "不完整", "en": "Incomplete"}, "complete": {"zh": "完整", "en": "Complete"}}},
-    "omentectomy": {"zh": "网膜切除", "en": "Omentectomy", "type": "select", "options": {"no": {"zh": "未切", "en": "No"}, "partial": {"zh": "部分", "en": "Partial"}, "total": {"zh": "全切", "en": "Total"}}},
-    "lymphadenectomy": {"zh": "淋巴结清扫", "en": "LND", "type": "select", "options": {"no": {"zh": "未清扫", "en": "No"}, "pelvic": {"zh": "盆腔", "en": "Pelvic"}, "paraaortic": {"zh": "腹主旁", "en": "PA"}, "both": {"zh": "盆+腹主", "en": "Both"}}},
+    "fertility_sparing_surgery": {"zh": "保留生育", "en": "Fertility", "type": "select", "options": {"no": {"zh": "否", "en": "No"}, "yes": {"zh": "是", "en": "Yes"}}},
+    "completeness_of_surgery": {"zh": "手术完整", "en": "Complete", "type": "select", "options": {"incomplete": {"zh": "不完整", "en": "Incomp"}, "complete": {"zh": "完整", "en": "Comp"}}},
+    "omentectomy": {"zh": "网膜切除", "en": "Omentectomy", "type": "select", "options": {"no": {"zh": "未切", "en": "No"}, "partial": {"zh": "部分", "en": "Part"}, "total": {"zh": "全切", "en": "Total"}}},
+    "lymphadenectomy": {"zh": "淋巴结清扫", "en": "LND", "type": "select", "options": {"no": {"zh": "未清扫", "en": "No"}, "pelvic": {"zh": "盆腔", "en": "Pelv"}, "paraaortic": {"zh": "腹主旁", "en": "PA"}, "both": {"zh": "盆+腹主", "en": "Both"}}},
     "postoperative_adjuvant_therapy": {"zh": "辅助治疗", "en": "Adjuvant", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "chemotherapy": {"zh": "化疗", "en": "Chemo"}, "targeted": {"zh": "靶向", "en": "Target"}, "combined": {"zh": "联合", "en": "Comb"}}},
-    "histological_subtype": {"zh": "组织类型", "en": "Histology", "type": "select", "options": {"serous": {"zh": "浆液性", "en": "Serous"}, "mucinous": {"zh": "黏液性", "en": "Mucinous"}, "endometrioid": {"zh": "内膜样", "en": "Endo"}, "clear_cell": {"zh": "透明细胞", "en": "Clear"}, "mixed": {"zh": "混合", "en": "Mixed"}, "other": {"zh": "其他", "en": "Other"}}},
-    "micropapillary": {"zh": "微乳头", "en": "Micropapillary", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "microinfiltration": {"zh": "微浸润", "en": "Microinvasion", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
+    "histological_subtype": {"zh": "组织类型", "en": "Histology", "type": "select", "options": {"serous": {"zh": "浆液性", "en": "Serous"}, "mucinous": {"zh": "黏液性", "en": "Mucin"}, "endometrioid": {"zh": "内膜样", "en": "Endo"}, "clear_cell": {"zh": "透明细胞", "en": "Clear"}, "mixed": {"zh": "混合", "en": "Mixed"}, "other": {"zh": "其他", "en": "Other"}}},
+    "micropapillary": {"zh": "微乳头", "en": "Micropap", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
+    "microinfiltration": {"zh": "微浸润", "en": "Microinv", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
     "psammoma_bodies_calcification": {"zh": "砂粒体", "en": "Psammoma", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "peritoneal_implantation": {"zh": "腹膜种植", "en": "Peritoneal", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "noninvasive": {"zh": "非浸润", "en": "Non-inv"}, "invasive": {"zh": "浸润", "en": "Invasive"}}},
+    "peritoneal_implantation": {"zh": "腹膜种植", "en": "Peritoneal", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "noninvasive": {"zh": "非浸润", "en": "Non-inv"}, "invasive": {"zh": "浸润", "en": "Inv"}}},
     "ascites_cytology": {"zh": "腹水细胞学", "en": "Ascites", "type": "select", "options": {"no_ascites": {"zh": "无腹水", "en": "None"}, "negative": {"zh": "阴性", "en": "Neg"}, "positive": {"zh": "阳性", "en": "Pos"}}},
     "figo_staging": {"zh": "FIGO分期", "en": "FIGO", "type": "select", "options": {"IA": {"zh": "IA", "en": "IA"}, "IB": {"zh": "IB", "en": "IB"}, "IC1": {"zh": "IC1", "en": "IC1"}, "IC2": {"zh": "IC2", "en": "IC2"}, "IC3": {"zh": "IC3", "en": "IC3"}, "II": {"zh": "II", "en": "II"}, "IIIA": {"zh": "IIIA", "en": "IIIA"}, "IIIB": {"zh": "IIIB", "en": "IIIB"}, "IIIC": {"zh": "IIIC", "en": "IIIC"}}},
-    "unilateral_or_bilateral": {"zh": "侧别", "en": "Laterality", "type": "select", "options": {"left": {"zh": "左", "en": "L"}, "right": {"zh": "右", "en": "R"}, "bilateral": {"zh": "双侧", "en": "Bil"}}},
+    "unilateral_or_bilateral": {"zh": "侧别", "en": "Lateral", "type": "select", "options": {"left": {"zh": "左", "en": "L"}, "right": {"zh": "右", "en": "R"}, "bilateral": {"zh": "双侧", "en": "Bil"}}},
     "tumor_size": {"zh": "肿瘤大小", "en": "Size", "type": "select", "options": {"<=5": {"zh": "≤5cm", "en": "≤5"}, "5-10": {"zh": "5-10cm", "en": "5-10"}, "10-15": {"zh": "10-15cm", "en": "10-15"}, ">15": {"zh": ">15cm", "en": ">15"}}},
-    "type_of_lesion": {"zh": "病灶性质", "en": "Lesion", "type": "select", "options": {"cystic": {"zh": "囊性", "en": "Cystic"}, "solid": {"zh": "实性", "en": "Solid"}, "mixed": {"zh": "囊实", "en": "Mixed"}}},
+    "type_of_lesion": {"zh": "病灶性质", "en": "Lesion", "type": "select", "options": {"cystic": {"zh": "囊性", "en": "Cyst"}, "solid": {"zh": "实性", "en": "Solid"}, "mixed": {"zh": "囊实", "en": "Mix"}}},
     "papillary_area_ratio": {"zh": "乳头占比", "en": "Papillary%", "type": "select", "options": {"<10%": {"zh": "<10%", "en": "<10%"}, "10-30%": {"zh": "10-30%", "en": "10-30%"}, "30-50%": {"zh": "30-50%", "en": "30-50%"}, ">50%": {"zh": ">50%", "en": ">50%"}}},
     "ca125": {"zh": "CA125", "en": "CA125", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "mild": {"zh": "轻度↑", "en": "Mild↑"}, "moderate": {"zh": "中度↑", "en": "Mod↑"}, "high": {"zh": "显著↑", "en": "High↑"}}},
     "cea": {"zh": "CEA", "en": "CEA", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "elevated": {"zh": "升高", "en": "↑"}}},
@@ -338,10 +422,6 @@ class EnhancedDenoisingAE(nn.Module):
         for hd in h: enc.extend([nn.Linear(d, hd), nn.BatchNorm1d(hd), nn.GELU(), nn.Dropout(drop)]); d = hd
         enc.append(nn.Linear(d, lat))
         self.encoder = nn.Sequential(*enc)
-        dec, d = [], lat
-        for hd in reversed(h): dec.extend([nn.Linear(d, hd), nn.BatchNorm1d(hd), nn.GELU(), nn.Dropout(drop)]); d = hd
-        dec.append(nn.Linear(d, in_dim))
-        self.decoder = nn.Sequential(*dec)
     def encode(self, x): return self.encoder(x)
 
 class EnhancedTransformer(nn.Module):
@@ -459,28 +539,25 @@ def make_template(lang):
         data[cols[i+1]] = [list(info['options'].keys())[0]]*3 if info['type']=='select' else [info.get('default',0)]*3
     return pd.DataFrame(data)
 
-# ================== 图表函数（2x2布局优化）==================
-
+# ================== 图表函数 ==================
 def make_gauge(risk, lang):
-    """仪表盘 - 综合风险"""
     if risk < 0.3: col, lv = "#27ae60", get_text("low_risk", lang)
     elif risk < 0.6: col, lv = "#f39c12", get_text("medium_risk", lang)
     else: col, lv = "#e74c3c", get_text("high_risk", lang)
     
     fig = go.Figure(go.Indicator(
         mode="gauge+number", value=risk*100,
-        number={'suffix':'%', 'font':{'size':56, 'color':col, 'family':'Arial Black'}},
-        title={'text': f"<b>{get_text('overall_risk', lang)}</b><br><span style='font-size:22px;color:{col}'>{lv}</span>", 'font':{'size':18}},
-        gauge={'axis':{'range':[0,100], 'tickwidth':2, 'tickcolor':'#555', 'tickfont':{'size':14}, 'dtick':25},
+        number={'suffix':'%', 'font':{'size':64, 'color':col, 'family':'Arial Black'}},
+        title={'text': f"<b>{get_text('overall_risk', lang)}</b><br><span style='font-size:26px;color:{col}'>{lv}</span>", 'font':{'size':20}},
+        gauge={'axis':{'range':[0,100], 'tickwidth':2, 'tickcolor':'#555', 'tickfont':{'size':16}, 'dtick':25},
                'bar':{'color':col, 'thickness':0.7},
                'bgcolor':'#f0f0f0', 'borderwidth':2, 'bordercolor':'#888',
                'steps':[{'range':[0,30],'color':'rgba(39,174,96,0.2)'}, {'range':[30,60],'color':'rgba(243,156,18,0.2)'}, {'range':[60,100],'color':'rgba(231,76,60,0.2)'}]}
     ))
-    fig.update_layout(height=300, margin=dict(l=30,r=30,t=80,b=20), paper_bgcolor='rgba(0,0,0,0)')
+    fig.update_layout(height=350, margin=dict(l=30,r=30,t=100,b=30), paper_bgcolor='rgba(0,0,0,0)')
     return fig
 
 def make_time_bar(r12, r36, r60, lang):
-    """柱状图 - 各时间点风险"""
     labels = [get_text('month_12', lang), get_text('month_36', lang), get_text('month_60', lang)]
     vals = [r12*100, r36*100, r60*100]
     cols = ['#27ae60' if v<30 else ('#f39c12' if v<60 else '#e74c3c') for v in vals]
@@ -488,72 +565,64 @@ def make_time_bar(r12, r36, r60, lang):
     fig = go.Figure(data=[go.Bar(
         x=labels, y=vals, marker_color=cols,
         text=[f'<b>{v:.1f}%</b>' for v in vals], textposition='outside',
-        textfont=dict(size=18, color='#333'), width=0.6
+        textfont=dict(size=20, color='#333'), width=0.5
     )])
     fig.update_layout(
-        title=dict(text=f"<b>{get_text('time_risk', lang)}</b>", font=dict(size=16), x=0.5),
-        xaxis=dict(tickfont=dict(size=14, color='#333'), linecolor='#888', linewidth=1),
-        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=14),
-                  tickfont=dict(size=12), range=[0, max(vals)*1.3 if max(vals)>0 else 100], gridcolor='#e8e8e8', linecolor='#888'),
-        height=300, margin=dict(l=60,r=30,t=60,b=40), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white'
+        title=dict(text=f"<b>{get_text('time_risk', lang)}</b>", font=dict(size=18), x=0.5),
+        xaxis=dict(tickfont=dict(size=16, color='#333')),
+        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16),
+                  tickfont=dict(size=14), range=[0, max(vals)*1.35 if max(vals)>0 else 100], gridcolor='#e8e8e8'),
+        height=350, margin=dict(l=70,r=30,t=70,b=50), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white'
     )
     return fig
 
 def make_survival_chart(surv, tp, lang):
-    """生存曲线"""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=tp, y=surv, mode='lines+markers', name=get_text('survival_prob', lang),
         line=dict(color='#3498db', width=3), fill='tozeroy', fillcolor='rgba(52,152,219,0.15)',
-        marker=dict(size=8, color='#3498db', line=dict(width=1, color='white'))
+        marker=dict(size=10, color='#3498db', line=dict(width=2, color='white'))
     ))
     fig.update_layout(
-        title=dict(text=f"<b>{get_text('survival_curve', lang)}</b>", font=dict(size=16), x=0.5),
-        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=14),
-                  tickfont=dict(size=12), gridcolor='#e8e8e8', linecolor='#888', dtick=12),
-        yaxis=dict(title=f"<b>{get_text('survival_prob', lang)}</b>", title_font=dict(size=14),
-                  tickfont=dict(size=12), range=[0,1.05], gridcolor='#e8e8e8', linecolor='#888', tickformat='.0%'),
-        height=300, margin=dict(l=60,r=30,t=60,b=50), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
+        title=dict(text=f"<b>{get_text('survival_curve', lang)}</b>", font=dict(size=18), x=0.5),
+        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16),
+                  tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
+        yaxis=dict(title=f"<b>{get_text('survival_prob', lang)}</b>", title_font=dict(size=16),
+                  tickfont=dict(size=14), range=[0,1.05], gridcolor='#e8e8e8', tickformat='.0%'),
+        height=350, margin=dict(l=70,r=30,t=70,b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
     )
     return fig
 
-def make_cumulative_risk_chart(cif, tp, lang):
-    """累积复发风险曲线"""
+def make_cumulative_chart(cif, tp, lang):
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=tp, y=cif, mode='lines+markers', name=get_text('cumulative_risk_curve', lang),
         line=dict(color='#e74c3c', width=3), fill='tozeroy', fillcolor='rgba(231,76,60,0.15)',
-        marker=dict(size=8, color='#e74c3c', symbol='square', line=dict(width=1, color='white'))
+        marker=dict(size=10, color='#e74c3c', symbol='square', line=dict(width=2, color='white'))
     ))
     fig.update_layout(
-        title=dict(text=f"<b>{get_text('cumulative_risk_curve', lang)}</b>", font=dict(size=16), x=0.5),
-        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=14),
-                  tickfont=dict(size=12), gridcolor='#e8e8e8', linecolor='#888', dtick=12),
-        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)}</b>", title_font=dict(size=14),
-                  tickfont=dict(size=12), range=[0,1.05], gridcolor='#e8e8e8', linecolor='#888', tickformat='.0%'),
-        height=300, margin=dict(l=60,r=30,t=60,b=50), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
+        title=dict(text=f"<b>{get_text('cumulative_risk_curve', lang)}</b>", font=dict(size=18), x=0.5),
+        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16),
+                  tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
+        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)}</b>", title_font=dict(size=16),
+                  tickfont=dict(size=14), range=[0,1.05], gridcolor='#e8e8e8', tickformat='.0%'),
+        height=350, margin=dict(l=70,r=30,t=70,b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
     )
     return fig
 
 def make_pie(df, lang):
-    """饼图 - 风险分布"""
     rc = get_text("risk_level", lang)
-    if rc in df.columns:
-        h = len(df[df[rc].str.contains('High|高', case=False, na=False)])
-        m = len(df[df[rc].str.contains('Intermediate|中', case=False, na=False)])
-        l = len(df) - h - m
-    else: h, m, l = 0, 0, 0
-    
+    h = len(df[df[rc].str.contains('High|高', case=False, na=False)]) if rc in df.columns else 0
+    m = len(df[df[rc].str.contains('Intermediate|中', case=False, na=False)]) if rc in df.columns else 0
+    l = len(df) - h - m
     fig = go.Figure(data=[go.Pie(
         labels=[get_text('low_risk',lang), get_text('medium_risk',lang), get_text('high_risk',lang)],
         values=[l, m, h], marker_colors=['#27ae60','#f39c12','#e74c3c'],
-        hole=0.45, textinfo='label+percent+value', textfont=dict(size=14), pull=[0, 0, 0.05]
+        hole=0.45, textinfo='label+percent+value', textfont=dict(size=15), pull=[0, 0, 0.05]
     )])
-    fig.update_layout(
-        title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5),
-        height=350, margin=dict(l=20,r=20,t=60,b=20), paper_bgcolor='rgba(0,0,0,0)',
-        legend=dict(font=dict(size=13), orientation='h', yanchor='bottom', y=-0.15, xanchor='center', x=0.5)
-    )
+    fig.update_layout(title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5),
+                     height=380, margin=dict(l=20,r=20,t=70,b=20), paper_bgcolor='rgba(0,0,0,0)',
+                     legend=dict(font=dict(size=14), orientation='h', yanchor='bottom', y=-0.12, xanchor='center', x=0.5))
     return fig
 
 # ================== PDF生成 ==================
@@ -561,14 +630,14 @@ def make_pdf(df, lang):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4)
     styles = getSampleStyleSheet()
-    story = [Paragraph("Cancer Recurrence Risk Assessment Report", ParagraphStyle('T', parent=styles['Heading1'], fontSize=18, spaceAfter=20, alignment=1)),
-             Paragraph("Shengjing Hospital of China Medical University", styles['Normal']),
-             Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']), Spacer(1, 20)]
     total = len(df)
     rc = get_text("risk_level", lang)
     h = len(df[df[rc].str.contains('High|高', case=False, na=False)]) if rc in df.columns else 0
     m = len(df[df[rc].str.contains('Intermediate|中', case=False, na=False)]) if rc in df.columns else 0
     l = total - h - m
+    story = [Paragraph("Cancer Recurrence Risk Report", ParagraphStyle('T', parent=styles['Heading1'], fontSize=18, spaceAfter=20, alignment=1)),
+             Paragraph("Shengjing Hospital of China Medical University", styles['Normal']),
+             Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']), Spacer(1, 20)]
     data = [["Category", "Count", "%"], ["Total", str(total), "100%"], ["High", str(h), f"{h/total*100:.1f}%" if total else "0%"], ["Medium", str(m), f"{m/total*100:.1f}%" if total else "0%"], ["Low", str(l), f"{l/total*100:.1f}%" if total else "0%"]]
     tbl = Table(data, colWidths=[120, 80, 80])
     tbl.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#3498db')), ('TEXTCOLOR',(0,0),(-1,0),colors.white), ('ALIGN',(0,0),(-1,-1),'CENTER'), ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'), ('GRID',(0,0),(-1,-1),1,colors.black)]))
@@ -586,7 +655,7 @@ def make_single_pdf(res, lang):
     story = [Paragraph("Patient Risk Assessment", ParagraphStyle('T', parent=styles['Heading1'], fontSize=18, spaceAfter=20, alignment=1)),
              Paragraph("Shengjing Hospital", styles['Normal']),
              Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']), Spacer(1, 20)]
-    data = [["Item", "Value"], ["Overall Risk", f"{r*100:.1f}%"], ["Level", lv], ["12M Risk", f"{res['r12']*100:.1f}%"], ["36M Risk", f"{res['r36']*100:.1f}%"], ["60M Risk", f"{res['r60']*100:.1f}%"]]
+    data = [["Item", "Value"], ["Risk", f"{r*100:.1f}%"], ["Level", lv], ["12M", f"{res['r12']*100:.1f}%"], ["36M", f"{res['r36']*100:.1f}%"], ["60M", f"{res['r60']*100:.1f}%"]]
     tbl = Table(data, colWidths=[150, 150])
     tbl.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#3498db')), ('TEXTCOLOR',(0,0),(-1,0),colors.white), ('ALIGN',(0,0),(-1,-1),'CENTER'), ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'), ('GRID',(0,0),(-1,-1),1,colors.black)]))
     story.extend([tbl, Spacer(1, 20), Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))])
@@ -606,17 +675,35 @@ def num_widget(v, info, lang, pre=""):
 def main():
     models = load_models()
     
-    # 顶部：左侧标题，右侧语言选择
-    top_left, top_mid, top_right = st.columns([4, 4, 2])
-    with top_right:
+    # 顶部栏：Logo + 语言选择
+    st.markdown(f"""
+    <div class="top-bar">
+        <div class="logo-section">
+            <img src="data:image/svg+xml;base64,{LOGO_BASE64}" alt="Logo">
+            <div class="logo-text">
+                <h2>盛京医院 Shengjing Hospital</h2>
+                <p>中国医科大学附属盛京医院</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 语言选择（右上角）
+    col_space, col_lang = st.columns([10, 1])
+    with col_lang:
         lang = LANGUAGES[st.selectbox("🌐", list(LANGUAGES.keys()), label_visibility="collapsed", key="lang")]
     
     # 医院头部
     st.markdown(f"""
     <div class="hospital-header">
-        <h1>🏥 {get_text('title', lang)}</h1>
-        <p class="subtitle">{get_text('subtitle', lang)}</p>
-        <p class="hospital-name">{get_text('hospital', lang)}</p>
+        <div class="header-logo">
+            <img src="data:image/svg+xml;base64,{LOGO_BASE64}" alt="Logo">
+        </div>
+        <div class="header-text">
+            <h1>🏥 {get_text('title', lang)}</h1>
+            <p class="subtitle">{get_text('subtitle', lang)}</p>
+            <p class="hospital-name">{get_text('hospital', lang)}</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -625,6 +712,7 @@ def main():
     
     # ========== 单例预测 ==========
     with tab1:
+        # 输入区域 - 三列布局（与输入一致）
         c1, c2, c3 = st.columns(3)
         data = {}
         
@@ -647,72 +735,74 @@ def main():
                 data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # 标志物
+        # 标志物 - 六列
         st.markdown(f'<div class="module-card"><div class="module-title markers">🧪 {get_text("tumor_markers", lang)}</div>', unsafe_allow_html=True)
         mc = st.columns(6)
         for i, v in enumerate(['ca125','cea','ca199','afp','ca724','he4']):
             with mc[i]: data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # 按钮
+        # 预测按钮
         st.markdown("<br>", unsafe_allow_html=True)
-        bc1, bc2, bc3 = st.columns([1.5, 1, 1.5])
+        bc1, bc2, bc3 = st.columns([2, 1, 2])
         with bc2:
-            if st.button(f"🔮 {get_text('predict_button', lang)}", use_container_width=True, key="pred"):
-                with st.spinner(get_text('processing', lang)):
-                    res = predict(data, models)
-                    
-                    # ========== 结果展示 - 2x2 布局 ==========
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-section"><div class="result-title">📊 {get_text("prediction_results", lang)}</div>', unsafe_allow_html=True)
-                    
-                    # 第一行：仪表盘 + 时间点柱状图
-                    row1_c1, row1_c2 = st.columns(2)
-                    with row1_c1:
-                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                        st.plotly_chart(make_gauge(res['risk'], lang), use_container_width=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    with row1_c2:
-                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                        st.plotly_chart(make_time_bar(res['r12'], res['r36'], res['r60'], lang), use_container_width=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # 第二行：生存曲线 + 累积风险曲线
-                    row2_c1, row2_c2 = st.columns(2)
-                    with row2_c1:
-                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                        st.plotly_chart(make_survival_chart(res['surv'], res['tp'], lang), use_container_width=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    with row2_c2:
-                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                        st.plotly_chart(make_cumulative_risk_chart(res['cif'], res['tp'], lang), use_container_width=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
+            predict_btn = st.button(f"🔮 {get_text('predict_button', lang)}", use_container_width=True, key="pred")
+        
+        if predict_btn:
+            with st.spinner(get_text('processing', lang)):
+                res = predict(data, models)
+                
+                # ========== 结果展示 - 全宽2x2布局 ==========
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown(f'<div class="result-section"><div class="result-title">📊 {get_text("prediction_results", lang)}</div>', unsafe_allow_html=True)
+                
+                # 第一行：仪表盘 + 时间点柱状图 (各50%宽度)
+                row1_c1, row1_c2 = st.columns(2)
+                with row1_c1:
+                    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                    st.plotly_chart(make_gauge(res['risk'], lang), use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # 临床建议
-                    r = res['risk']
-                    if r < 0.3: lv, adv, css = "low_risk", "advice_low", "low"
-                    elif r < 0.6: lv, adv, css = "medium_risk", "advice_medium", "medium"
-                    else: lv, adv, css = "high_risk", "advice_high", "high"
-                    
-                    st.markdown(f"""
-                    <div class="advice-box {css}">
-                        <h4>💊 {get_text('clinical_advice', lang)} — {get_text(lv, lang)} ({r*100:.1f}%)</h4>
-                        <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; line-height: 1.8; font-size: 0.95rem;">{get_text(adv, lang)}</pre>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # 导出
-                    st.markdown(f"#### 📥 {get_text('export_results', lang)}")
-                    ec1, ec2, ec3 = st.columns(3)
-                    with ec1:
-                        df_exp = pd.DataFrame({get_text('overall_risk',lang): [f"{res['risk']*100:.1f}%"], get_text('month_12',lang): [f"{res['r12']*100:.1f}%"], get_text('month_36',lang): [f"{res['r36']*100:.1f}%"], get_text('month_60',lang): [f"{res['r60']*100:.1f}%"]})
-                        buf = io.BytesIO()
-                        with pd.ExcelWriter(buf, engine='openpyxl') as w: df_exp.to_excel(w, index=False)
-                        st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), f"result_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
-                    with ec2:
-                        st.download_button(f"📄 {get_text('export_pdf', lang)}", make_single_pdf(res, lang), f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
+                with row1_c2:
+                    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                    st.plotly_chart(make_time_bar(res['r12'], res['r36'], res['r60'], lang), use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                # 第二行：生存曲线 + 累积风险曲线 (各50%宽度)
+                row2_c1, row2_c2 = st.columns(2)
+                with row2_c1:
+                    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                    st.plotly_chart(make_survival_chart(res['surv'], res['tp'], lang), use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                with row2_c2:
+                    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                    st.plotly_chart(make_cumulative_chart(res['cif'], res['tp'], lang), use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # 临床建议
+                r = res['risk']
+                if r < 0.3: lv, adv, css = "low_risk", "advice_low", "low"
+                elif r < 0.6: lv, adv, css = "medium_risk", "advice_medium", "medium"
+                else: lv, adv, css = "high_risk", "advice_high", "high"
+                
+                st.markdown(f"""
+                <div class="advice-box {css}">
+                    <h4>💊 {get_text('clinical_advice', lang)} — {get_text(lv, lang)} ({r*100:.1f}%)</h4>
+                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; line-height: 1.8; font-size: 0.95rem;">{get_text(adv, lang)}</pre>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 导出按钮 - 三列
+                st.markdown(f"#### 📥 {get_text('export_results', lang)}")
+                ec1, ec2, ec3 = st.columns(3)
+                with ec1:
+                    df_exp = pd.DataFrame({get_text('overall_risk',lang): [f"{res['risk']*100:.1f}%"], get_text('month_12',lang): [f"{res['r12']*100:.1f}%"], get_text('month_36',lang): [f"{res['r36']*100:.1f}%"], get_text('month_60',lang): [f"{res['r60']*100:.1f}%"]})
+                    buf = io.BytesIO()
+                    with pd.ExcelWriter(buf, engine='openpyxl') as w: df_exp.to_excel(w, index=False)
+                    st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), f"result_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
+                with ec2:
+                    st.download_button(f"📄 {get_text('export_pdf', lang)}", make_single_pdf(res, lang), f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
     
     # ========== 批量预测 ==========
     with tab2:
@@ -756,7 +846,7 @@ def main():
                         m3.metric(get_text('medium_risk_count', lang), m)
                         m4.metric(get_text('low_risk_count', lang), l)
                         
-                        # 图表 2列
+                        # 图表 - 两列全宽
                         cc1, cc2 = st.columns(2)
                         with cc1:
                             st.plotly_chart(make_pie(res_df, lang), use_container_width=True)
@@ -766,9 +856,9 @@ def main():
                                 fig.add_vline(x=30, line_dash="dash", line_color="#27ae60", line_width=2)
                                 fig.add_vline(x=60, line_dash="dash", line_color="#e74c3c", line_width=2)
                                 fig.update_layout(title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5),
-                                                 xaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=14), tickfont=dict(size=12)),
-                                                 yaxis=dict(title=f"<b>{get_text('total_patients', lang)}</b>", title_font=dict(size=14), tickfont=dict(size=12)),
-                                                 height=350, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white')
+                                                 xaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), tickfont=dict(size=14)),
+                                                 yaxis=dict(title=f"<b>{get_text('total_patients', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14)),
+                                                 height=380, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white')
                                 st.plotly_chart(fig, use_container_width=True)
                         
                         # 结果表格
@@ -807,8 +897,11 @@ def main():
     st.info(get_text('disclaimer', lang))
     st.markdown(f"""
     <div class="footer">
-        <p class="hospital-name">{get_text('hospital', lang)}</p>
-        <p class="version">Cancer Recurrence Risk Prediction System v3.0</p>
+        <img src="data:image/svg+xml;base64,{LOGO_BASE64}" alt="Logo">
+        <div class="footer-text">
+            <p class="hospital-name">{get_text('hospital', lang)}</p>
+            <p class="version">Cancer Recurrence Risk Prediction System v3.0</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
