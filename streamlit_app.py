@@ -1491,7 +1491,7 @@ def main():
                 
                 # 调试信息
                 with st.expander(f"🔧 {get_text('debug_info', lang)}"):
-                    col_d1, col_d2 = st.columns(2)
+                    col_d1, col_d2 = st.columns(2)                     
                     with col_d1:
                         st.markdown(f"**{get_text('input_data', lang)}:**")
                         encoded = {v: f"{data[v]} → {encode_option(v, data[v])}" if INPUT_VARIABLES[v]['type'] == 'select' else data[v] for v in VARIABLE_ORDER}
@@ -1500,6 +1500,22 @@ def main():
                         st.markdown(f"**{get_text('processed_features', lang)}:**")
                         X_proc = preprocess(data, models)
                         st.write(f"Shape: {X_proc.shape}, Range: [{X_proc.min():.4f}, {X_proc.max():.4f}]")
+                                            # 检查ds_min_max
+                        ds_mm = np.load(f"{model_dir}/ds_min_max.npy")
+                        print(f"DeepSurv范围: [{ds_mm[0]:.4f}, {ds_mm[1]:.4f}]")
+                        print(f"范围大小: {ds_mm[1] - ds_mm[0]:.4f}")
+                # 检查预处理器
+                        prep = joblib.load(f"{model_dir}/preprocessor.joblib")
+                        print(f"预处理器特征数: {prep.scaler.n_features_in_}")
+                        print(f"Scaler均值范围: [{prep.scaler.center_.min():.4f}, {prep.scaler.center_.max():.4f}]")
+                # 检查参数
+                        with open(f"{model_dir}/best_parameters.json") as f:
+                        params = json.load(f)
+                        print(f"模型参数: {params}")
+
+                    # 检查时间切分
+                        time_cuts = np.load(f"{model_dir}/time_cuts.npy")
+                        print(f"时间切分: {time_cuts}")
                     
                     st.markdown("**模型输出:**")
                     dc = st.columns(4)
