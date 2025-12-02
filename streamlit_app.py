@@ -386,42 +386,349 @@ TRANSLATIONS = {
     }
 }
 
-# ================== 输入变量 ==================
+# ================== 输入变量（更新后）==================
 INPUT_VARIABLES = {
-    "age": {"zh": "年龄", "en": "Age", "type": "number", "min": 18, "max": 100, "default": 50, "unit": {"zh": "岁", "en": "yrs"}},
-    "family_cancer_history": {"zh": "家族史", "en": "Family Hx", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "sexual_history": {"zh": "性生活史", "en": "Sexual Hx", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "parity": {"zh": "孕产次", "en": "Parity", "type": "select", "options": {"0": {"zh": "未育", "en": "0"}, "1": {"zh": "1次", "en": "1"}, "2": {"zh": "2次", "en": "2"}, "3": {"zh": "≥3", "en": "≥3"}}},
-    "menopausal_status": {"zh": "月经状态", "en": "Menopause", "type": "select", "options": {"premenopausal": {"zh": "绝经前", "en": "Pre"}, "postmenopausal": {"zh": "绝经后", "en": "Post"}}},
-    "comorbidities": {"zh": "合并症", "en": "Comorbidities", "type": "select", "options": {"no": {"zh": "无", "en": "None"}, "hypertension": {"zh": "高血压", "en": "HTN"}, "diabetes": {"zh": "糖尿病", "en": "DM"}, "cardiovascular": {"zh": "心血管", "en": "CVD"}, "multiple": {"zh": "多种", "en": "Multi"}}},
-    "smoking_drinking_history": {"zh": "烟酒史", "en": "Smoke/Alcohol", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "smoking": {"zh": "吸烟", "en": "Smoke"}, "drinking": {"zh": "饮酒", "en": "Alcohol"}, "both": {"zh": "均有", "en": "Both"}}},
-    "receive_estrogens": {"zh": "激素暴露", "en": "Hormone", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "hrt": {"zh": "HRT", "en": "HRT"}, "contraceptive": {"zh": "避孕药", "en": "OCP"}, "other": {"zh": "其他", "en": "Other"}}},
-    "ovulation_induction": {"zh": "促排卵史", "en": "Ovul Induc", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "presenting_symptom": {"zh": "主诉症状", "en": "Symptom", "type": "select", "options": {"asymptomatic": {"zh": "无症状", "en": "None"}, "abdominal_pain": {"zh": "腹痛", "en": "Pain"}, "bloating": {"zh": "腹胀", "en": "Bloat"}, "mass": {"zh": "包块", "en": "Mass"}, "bleeding": {"zh": "出血", "en": "Bleed"}, "other": {"zh": "其他", "en": "Other"}}},
-    "surgical_route": {"zh": "手术途径", "en": "Surgery", "type": "select", "options": {"laparoscopy": {"zh": "腹腔镜", "en": "Lap"}, "laparotomy": {"zh": "开腹", "en": "Open"}, "robotic": {"zh": "机器人", "en": "Robot"}, "conversion": {"zh": "中转", "en": "Conv"}}},
-    "tumor_envelope_integrity": {"zh": "包膜完整", "en": "Capsule", "type": "select", "options": {"intact": {"zh": "完整", "en": "Intact"}, "ruptured_before": {"zh": "术前破", "en": "Pre-rupt"}, "ruptured_during": {"zh": "术中破", "en": "Intra-rupt"}}},
-    "fertility_sparing_surgery": {"zh": "保留生育", "en": "Fertility", "type": "select", "options": {"no": {"zh": "否", "en": "No"}, "yes": {"zh": "是", "en": "Yes"}}},
-    "completeness_of_surgery": {"zh": "手术完整", "en": "Complete", "type": "select", "options": {"incomplete": {"zh": "不完整", "en": "Incomp"}, "complete": {"zh": "完整", "en": "Comp"}}},
-    "omentectomy": {"zh": "网膜切除", "en": "Omentectomy", "type": "select", "options": {"no": {"zh": "未切", "en": "No"}, "partial": {"zh": "部分", "en": "Part"}, "total": {"zh": "全切", "en": "Total"}}},
-    "lymphadenectomy": {"zh": "淋巴结清扫", "en": "LND", "type": "select", "options": {"no": {"zh": "未清扫", "en": "No"}, "pelvic": {"zh": "盆腔", "en": "Pelv"}, "paraaortic": {"zh": "腹主旁", "en": "PA"}, "both": {"zh": "盆+腹主", "en": "Both"}}},
-    "postoperative_adjuvant_therapy": {"zh": "辅助治疗", "en": "Adjuvant", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "chemotherapy": {"zh": "化疗", "en": "Chemo"}, "targeted": {"zh": "靶向", "en": "Target"}, "combined": {"zh": "联合", "en": "Comb"}}},
-    "histological_subtype": {"zh": "组织类型", "en": "Histology", "type": "select", "options": {"serous": {"zh": "浆液性", "en": "Serous"}, "mucinous": {"zh": "黏液性", "en": "Mucin"}, "endometrioid": {"zh": "内膜样", "en": "Endo"}, "clear_cell": {"zh": "透明细胞", "en": "Clear"}, "mixed": {"zh": "混合", "en": "Mixed"}, "other": {"zh": "其他", "en": "Other"}}},
-    "micropapillary": {"zh": "微乳头", "en": "Micropap", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "microinfiltration": {"zh": "微浸润", "en": "Microinv", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "psammoma_bodies_calcification": {"zh": "砂粒体", "en": "Psammoma", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "yes": {"zh": "有", "en": "Yes"}}},
-    "peritoneal_implantation": {"zh": "腹膜种植", "en": "Peritoneal", "type": "select", "options": {"no": {"zh": "无", "en": "No"}, "noninvasive": {"zh": "非浸润", "en": "Non-inv"}, "invasive": {"zh": "浸润", "en": "Inv"}}},
-    "ascites_cytology": {"zh": "腹水细胞学", "en": "Ascites", "type": "select", "options": {"no_ascites": {"zh": "无腹水", "en": "None"}, "negative": {"zh": "阴性", "en": "Neg"}, "positive": {"zh": "阳性", "en": "Pos"}}},
-    "figo_staging": {"zh": "FIGO分期", "en": "FIGO", "type": "select", "options": {"IA": {"zh": "IA", "en": "IA"}, "IB": {"zh": "IB", "en": "IB"}, "IC1": {"zh": "IC1", "en": "IC1"}, "IC2": {"zh": "IC2", "en": "IC2"}, "IC3": {"zh": "IC3", "en": "IC3"}, "II": {"zh": "II", "en": "II"}, "IIIA": {"zh": "IIIA", "en": "IIIA"}, "IIIB": {"zh": "IIIB", "en": "IIIB"}, "IIIC": {"zh": "IIIC", "en": "IIIC"}}},
-    "unilateral_or_bilateral": {"zh": "侧别", "en": "Lateral", "type": "select", "options": {"left": {"zh": "左", "en": "L"}, "right": {"zh": "右", "en": "R"}, "bilateral": {"zh": "双侧", "en": "Bil"}}},
-    "tumor_size": {"zh": "肿瘤大小", "en": "Size", "type": "select", "options": {"<=5": {"zh": "≤5cm", "en": "≤5"}, "5-10": {"zh": "5-10cm", "en": "5-10"}, "10-15": {"zh": "10-15cm", "en": "10-15"}, ">15": {"zh": ">15cm", "en": ">15"}}},
-    "type_of_lesion": {"zh": "病灶性质", "en": "Lesion", "type": "select", "options": {"cystic": {"zh": "囊性", "en": "Cyst"}, "solid": {"zh": "实性", "en": "Solid"}, "mixed": {"zh": "囊实", "en": "Mix"}}},
-    "papillary_area_ratio": {"zh": "乳头占比", "en": "Papillary%", "type": "select", "options": {"<10%": {"zh": "<10%", "en": "<10%"}, "10-30%": {"zh": "10-30%", "en": "10-30%"}, "30-50%": {"zh": "30-50%", "en": "30-50%"}, ">50%": {"zh": ">50%", "en": ">50%"}}},
-    "ca125": {"zh": "CA125", "en": "CA125", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "mild": {"zh": "轻度↑", "en": "Mild↑"}, "moderate": {"zh": "中度↑", "en": "Mod↑"}, "high": {"zh": "显著↑", "en": "High↑"}}},
-    "cea": {"zh": "CEA", "en": "CEA", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "elevated": {"zh": "升高", "en": "↑"}}},
-    "ca199": {"zh": "CA199", "en": "CA199", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "elevated": {"zh": "升高", "en": "↑"}}},
-    "afp": {"zh": "AFP", "en": "AFP", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "elevated": {"zh": "升高", "en": "↑"}}},
-    "ca724": {"zh": "CA724", "en": "CA724", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "elevated": {"zh": "升高", "en": "↑"}}},
-    "he4": {"zh": "HE4", "en": "HE4", "type": "select", "options": {"normal": {"zh": "正常", "en": "Norm"}, "mild": {"zh": "轻度↑", "en": "Mild↑"}, "elevated": {"zh": "显著↑", "en": "High↑"}}}
+    # 基本信息
+    "age": {
+        "zh": "年龄", 
+        "en": "Age", 
+        "type": "number", 
+        "min": 18, 
+        "max": 100, 
+        "default": 50, 
+        "unit": {"zh": "岁", "en": "yrs"}
+    },
+    "family_cancer_history": {
+        "zh": "家族史", 
+        "en": "Family Cancer History", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "sexual_history": {
+        "zh": "性生活史", 
+        "en": "Sexual History", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "parity": {
+        "zh": "生育", 
+        "en": "Parity", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "menopausal_status": {
+        "zh": "绝经", 
+        "en": "Menopausal Status", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "comorbidities": {
+        "zh": "内科疾病", 
+        "en": "Comorbidities", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "smoking_drinking_history": {
+        "zh": "吸烟史", 
+        "en": "Smoking and Drinking History", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "receive_estrogens": {
+        "zh": "雌激素暴露史", 
+        "en": "Receive Estrogens", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "ovulation_induction": {
+        "zh": "促排卵后", 
+        "en": "Ovulation Induction", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "presenting_symptom": {
+        "zh": "症状", 
+        "en": "Presenting Symptom", 
+        "type": "select", 
+        "options": {
+            "abdominal": {"zh": "腹痛、腹胀", "en": "Abdominal Pain/Bloating"}, 
+            "checkup": {"zh": "体检发现", "en": "Found During Checkup"}, 
+            "bleeding": {"zh": "异常流血、不规律流血", "en": "Abnormal Bleeding"}
+        }
+    },
+    
+    # 手术信息
+    "surgical_route": {
+        "zh": "手术方式", 
+        "en": "Surgical Route", 
+        "type": "select", 
+        "options": {
+            "laparotomy": {"zh": "开腹", "en": "Laparotomy"}, 
+            "laparoscopy": {"zh": "腹腔镜", "en": "Laparoscopy"}
+        }
+    },
+    "tumor_envelope_integrity": {
+        "zh": "肿物破裂", 
+        "en": "Tumor Envelope Integrity", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "fertility_sparing_surgery": {
+        "zh": "保留生育功能", 
+        "en": "Fertility-Sparing Surgery", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "completeness_of_surgery": {
+        "zh": "全面分期", 
+        "en": "Completeness of Surgery", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "omentectomy": {
+        "zh": "清大网", 
+        "en": "Omentectomy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "lymphadenectomy": {
+        "zh": "清淋巴", 
+        "en": "Lymphadenectomy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "postoperative_adjuvant_therapy": {
+        "zh": "术后化疗", 
+        "en": "Postoperative Adjuvant Therapy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    
+    # 病理信息
+    "histological_subtype": {
+        "zh": "病理类型", 
+        "en": "Histological Subtype", 
+        "type": "select", 
+        "options": {
+            "serous": {"zh": "浆液性", "en": "Serous"}, 
+            "mucinous": {"zh": "黏液性", "en": "Mucinous"}, 
+            "endometrioid": {"zh": "子宫内膜样", "en": "Endometrioid"}, 
+            "clear_cell": {"zh": "透明细胞", "en": "Clear Cell"}, 
+            "other": {"zh": "其他", "en": "Other"}
+        }
+    },
+    "micropapillary": {
+        "zh": "微乳头", 
+        "en": "Micropapillary", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "microinfiltration": {
+        "zh": "微浸润", 
+        "en": "Microinfiltration", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "psammoma_bodies_calcification": {
+        "zh": "钙化砂体", 
+        "en": "Psammoma Bodies and Calcification", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "peritoneal_implantation": {
+        "zh": "腹膜种植", 
+        "en": "Peritoneal Implantation", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "ascites_cytology": {
+        "zh": "腹水细胞学", 
+        "en": "Ascites Cytology", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "figo_staging": {
+        "zh": "分期", 
+        "en": "FIGO Staging", 
+        "type": "select", 
+        "options": {
+            "I": {"zh": "I期", "en": "Stage I"}, 
+            "II": {"zh": "II期", "en": "Stage II"}, 
+            "III": {"zh": "III期", "en": "Stage III"}
+        }
+    },
+    "unilateral_or_bilateral": {
+        "zh": "单侧/双侧", 
+        "en": "Unilateral or Bilateral", 
+        "type": "select", 
+        "options": {
+            "unilateral": {"zh": "单侧", "en": "Unilateral"}, 
+            "bilateral": {"zh": "双侧", "en": "Bilateral"}
+        }
+    },
+    "tumor_size": {
+        "zh": "肿瘤直径", 
+        "en": "Tumor Size", 
+        "type": "number", 
+        "min": 0, 
+        "max": 50, 
+        "default": 5, 
+        "unit": {"zh": "cm", "en": "cm"}
+    },
+    "type_of_lesion": {
+        "zh": "病灶类型", 
+        "en": "Type of Lesion", 
+        "type": "select", 
+        "options": {
+            "exophytic": {"zh": "外生型", "en": "Exophytic"}, 
+            "endophytic": {"zh": "内生型", "en": "Endophytic"}
+        }
+    },
+    "papillary_area_ratio": {
+        "zh": "乳头面积占比", 
+        "en": "Papillary Area Ratio", 
+        "type": "number", 
+        "min": 0, 
+        "max": 100, 
+        "default": 0, 
+        "unit": {"zh": "%", "en": "%"}
+    },
+    
+    # 肿瘤标志物
+    "ca125": {
+        "zh": "CA125", 
+        "en": "CA125", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-35 U/mL)", "en": "Normal (0-35 U/mL)"}, 
+            "abnormal": {"zh": "异常 (>35 U/mL)", "en": "Abnormal (>35 U/mL)"}
+        }
+    },
+    "cea": {
+        "zh": "CEA", 
+        "en": "CEA", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-5 ng/mL)", "en": "Normal (0-5 ng/mL)"}, 
+            "abnormal": {"zh": "异常 (>5 ng/mL)", "en": "Abnormal (>5 ng/mL)"}
+        }
+    },
+    "ca199": {
+        "zh": "CA199", 
+        "en": "CA199", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-37 U/mL)", "en": "Normal (0-37 U/mL)"}, 
+            "abnormal": {"zh": "异常 (>37 U/mL)", "en": "Abnormal (>37 U/mL)"}
+        }
+    },
+    "afp": {
+        "zh": "AFP", 
+        "en": "AFP", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-9 ng/mL)", "en": "Normal (0-9 ng/mL)"}, 
+            "abnormal": {"zh": "异常 (>9 ng/mL)", "en": "Abnormal (>9 ng/mL)"}
+        }
+    },
+    "ca724": {
+        "zh": "CA724", 
+        "en": "CA724", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-6.9 U/mL)", "en": "Normal (0-6.9 U/mL)"}, 
+            "abnormal": {"zh": "异常 (>6.9 U/mL)", "en": "Abnormal (>6.9 U/mL)"}
+        }
+    },
+    "he4": {
+        "zh": "HE4", 
+        "en": "HE4", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-140 pmol/L)", "en": "Normal (0-140 pmol/L)"}, 
+            "abnormal": {"zh": "异常 (>140 pmol/L)", "en": "Abnormal (>140 pmol/L)"}
+        }
+    }
+}
+
+# 变量分组定义
+VARIABLE_GROUPS = {
+    "basic": [
+        "age", "family_cancer_history", "sexual_history", "parity", 
+        "menopausal_status", "comorbidities", "smoking_drinking_history", 
+        "receive_estrogens", "ovulation_induction", "presenting_symptom"
+    ],
+    "surgical": [
+        "surgical_route", "tumor_envelope_integrity", "fertility_sparing_surgery",
+        "completeness_of_surgery", "omentectomy", "lymphadenectomy", 
+        "postoperative_adjuvant_therapy"
+    ],
+    "pathology": [
+        "histological_subtype", "micropapillary", "microinfiltration",
+        "psammoma_bodies_calcification", "peritoneal_implantation", "ascites_cytology",
+        "figo_staging", "unilateral_or_bilateral", "tumor_size", 
+        "type_of_lesion", "papillary_area_ratio"
+    ],
+    "markers": [
+        "ca125", "cea", "ca199", "afp", "ca724", "he4"
+    ]
 }
 
 # ================== 数据预处理类（与训练代码一致）==================
@@ -1235,7 +1542,11 @@ def make_single_pdf(res, lang):
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), 
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'), 
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), 
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('FONTSIZE', (0, 0), (-1, -1), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('TOPPADDING', (0, 0), (-1, 0), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
     ]))
     
     story.extend([
@@ -1247,6 +1558,355 @@ def make_single_pdf(res, lang):
     doc.build(story)
     buf.seek(0)
     return buf.getvalue()
+
+
+# ================== 更新后的输入变量定义 ==================
+INPUT_VARIABLES = {
+    # 基本信息
+    "age": {
+        "zh": "年龄", 
+        "en": "Age", 
+        "type": "number", 
+        "min": 18, 
+        "max": 100, 
+        "default": 50, 
+        "unit": {"zh": "岁", "en": "yrs"}
+    },
+    "family_cancer_history": {
+        "zh": "家族史", 
+        "en": "Family Cancer History", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "sexual_history": {
+        "zh": "性生活史", 
+        "en": "Sexual History", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "parity": {
+        "zh": "生育", 
+        "en": "Parity", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "menopausal_status": {
+        "zh": "绝经", 
+        "en": "Menopausal Status", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "comorbidities": {
+        "zh": "内科疾病", 
+        "en": "Comorbidities", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "smoking_drinking_history": {
+        "zh": "吸烟史", 
+        "en": "Smoking and Drinking History", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "receive_estrogens": {
+        "zh": "雌激素暴露史", 
+        "en": "Receive Estrogens", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "ovulation_induction": {
+        "zh": "促排卵后", 
+        "en": "Ovulation Induction", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    
+    # 症状与手术信息
+    "presenting_symptom": {
+        "zh": "症状", 
+        "en": "Presenting Symptom", 
+        "type": "select", 
+        "options": {
+            "abdominal_pain_bloating": {"zh": "腹痛、腹胀", "en": "Abdominal Pain/Bloating"}, 
+            "physical_examination": {"zh": "体检发现", "en": "Physical Examination"},
+            "abnormal_bleeding": {"zh": "异常流血、不规律流血", "en": "Abnormal/Irregular Bleeding"}
+        }
+    },
+    "surgical_route": {
+        "zh": "手术方式", 
+        "en": "Surgical Route", 
+        "type": "select", 
+        "options": {
+            "laparotomy": {"zh": "开腹", "en": "Laparotomy"}, 
+            "laparoscopy": {"zh": "腹腔镜", "en": "Laparoscopy"}
+        }
+    },
+    "tumor_envelope_integrity": {
+        "zh": "肿物破裂", 
+        "en": "Tumor Envelope Integrity", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "fertility_sparing_surgery": {
+        "zh": "保留生育功能", 
+        "en": "Fertility-Sparing Surgery", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "completeness_of_surgery": {
+        "zh": "全面分期", 
+        "en": "Completeness of Surgery", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "omentectomy": {
+        "zh": "清大网", 
+        "en": "Omentectomy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "lymphadenectomy": {
+        "zh": "清淋巴", 
+        "en": "Lymphadenectomy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "postoperative_adjuvant_therapy": {
+        "zh": "术后化疗", 
+        "en": "Postoperative Adjuvant Therapy", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    
+    # 病理信息
+    "histological_subtype": {
+        "zh": "病理类型", 
+        "en": "Histological Subtype", 
+        "type": "select", 
+        "options": {
+            "serous": {"zh": "浆液性", "en": "Serous"}, 
+            "mucinous": {"zh": "黏液性", "en": "Mucinous"}, 
+            "endometrioid": {"zh": "子宫内膜样", "en": "Endometrioid"},
+            "clear_cell": {"zh": "透明细胞", "en": "Clear Cell"},
+            "mixed": {"zh": "混合型", "en": "Mixed"},
+            "other": {"zh": "其他", "en": "Other"}
+        }
+    },
+    "micropapillary": {
+        "zh": "微乳头", 
+        "en": "Micropapillary", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "microinfiltration": {
+        "zh": "微浸润", 
+        "en": "Microinfiltration", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "psammoma_bodies_calcification": {
+        "zh": "钙化砂体", 
+        "en": "Psammoma Bodies and Calcification", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "peritoneal_implantation": {
+        "zh": "腹膜种植", 
+        "en": "Peritoneal Implantation", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "ascites_cytology": {
+        "zh": "腹水细胞学", 
+        "en": "Ascites Cytology", 
+        "type": "select", 
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    "figo_staging": {
+        "zh": "分期", 
+        "en": "FIGO Staging", 
+        "type": "select", 
+        "options": {
+            "I": {"zh": "I", "en": "I"}, 
+            "II": {"zh": "II", "en": "II"}, 
+            "III": {"zh": "III", "en": "III"}
+        }
+    },
+    "unilateral_or_bilateral": {
+        "zh": "单侧/双侧", 
+        "en": "Unilateral or Bilateral", 
+        "type": "select", 
+        "options": {
+            "unilateral": {"zh": "单侧", "en": "Unilateral"}, 
+            "bilateral": {"zh": "双侧", "en": "Bilateral"}
+        }
+    },
+    "tumor_size": {
+        "zh": "肿瘤直径", 
+        "en": "Tumor Size", 
+        "type": "number", 
+        "min": 0.1, 
+        "max": 50, 
+        "default": 5.0, 
+        "unit": {"zh": "cm", "en": "cm"}
+    },
+    "type_of_lesion": {
+        "zh": "病灶类型", 
+        "en": "Type of Lesion", 
+        "type": "select", 
+        "options": {
+            "exophytic": {"zh": "外生型", "en": "Exophytic"}, 
+            "endophytic": {"zh": "内生型", "en": "Endophytic"}
+        }
+    },
+    "papillary_area_ratio": {
+        "zh": "乳头面积占比", 
+        "en": "Papillary Area Ratio", 
+        "type": "select", 
+        "options": {
+            "<10%": {"zh": "<10%", "en": "<10%"}, 
+            "10-30%": {"zh": "10-30%", "en": "10-30%"}, 
+            "30-50%": {"zh": "30-50%", "en": "30-50%"}, 
+            ">50%": {"zh": ">50%", "en": ">50%"}
+        }
+    },
+    
+    # 肿瘤标志物
+    "ca125": {
+        "zh": "CA125", 
+        "en": "CA125", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-35 U/mL)", "en": "Normal (0-35 U/mL)"}, 
+            "abnormal": {"zh": "异常 (>35 U/mL)", "en": "Abnormal (>35 U/mL)"}
+        }
+    },
+    "cea": {
+        "zh": "CEA", 
+        "en": "CEA", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-5 ng/mL)", "en": "Normal (0-5 ng/mL)"}, 
+            "abnormal": {"zh": "异常 (>5 ng/mL)", "en": "Abnormal (>5 ng/mL)"}
+        }
+    },
+    "ca199": {
+        "zh": "CA199", 
+        "en": "CA199", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-37 U/mL)", "en": "Normal (0-37 U/mL)"}, 
+            "abnormal": {"zh": "异常 (>37 U/mL)", "en": "Abnormal (>37 U/mL)"}
+        }
+    },
+    "afp": {
+        "zh": "AFP", 
+        "en": "AFP", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-9 ng/mL)", "en": "Normal (0-9 ng/mL)"}, 
+            "abnormal": {"zh": "异常 (>9 ng/mL)", "en": "Abnormal (>9 ng/mL)"}
+        }
+    },
+    "ca724": {
+        "zh": "CA724", 
+        "en": "CA724", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-6.9 U/mL)", "en": "Normal (0-6.9 U/mL)"}, 
+            "abnormal": {"zh": "异常 (>6.9 U/mL)", "en": "Abnormal (>6.9 U/mL)"}
+        }
+    },
+    "he4": {
+        "zh": "HE4", 
+        "en": "HE4", 
+        "type": "select", 
+        "options": {
+            "normal": {"zh": "正常 (0-140 pmol/L)", "en": "Normal (0-140 pmol/L)"}, 
+            "abnormal": {"zh": "异常 (>140 pmol/L)", "en": "Abnormal (>140 pmol/L)"}
+        }
+    }
+}
+
+# ================== 变量分组定义 ==================
+VARIABLE_GROUPS = {
+    "basic_info": [
+        "age", "family_cancer_history", "sexual_history", "parity", 
+        "menopausal_status", "comorbidities", "smoking_drinking_history", 
+        "receive_estrogens", "ovulation_induction"
+    ],
+    "surgical_info": [
+        "presenting_symptom", "surgical_route", "tumor_envelope_integrity", 
+        "fertility_sparing_surgery", "completeness_of_surgery", "omentectomy", 
+        "lymphadenectomy", "postoperative_adjuvant_therapy"
+    ],
+    "pathology_info": [
+        "histological_subtype", "micropapillary", "microinfiltration", 
+        "psammoma_bodies_calcification", "peritoneal_implantation", "ascites_cytology", 
+        "figo_staging", "unilateral_or_bilateral", "tumor_size", "type_of_lesion", 
+        "papillary_area_ratio"
+    ],
+    "tumor_markers": [
+        "ca125", "cea", "ca199", "afp", "ca724", "he4"
+    ]
+}
 
 
 # ================== 输入控件 ==================
@@ -1272,7 +1932,7 @@ def num_widget(v, info, lang, pre=""):
     )
 
 
-# ================== 主函数 ==================
+# ================== 主函数（更新后的输入部分）==================
 def main():
     models = load_models()
     
@@ -1363,28 +2023,33 @@ def main():
         c1, c2, c3 = st.columns(3)
         data = {}
         
+        # 基本信息列
         with c1:
             st.markdown(f'<div class="module-card"><div class="module-title">📝 {get_text("basic_info", lang)}</div>', unsafe_allow_html=True)
-            for v in ['age', 'family_cancer_history', 'sexual_history', 'parity', 'menopausal_status', 'comorbidities', 'smoking_drinking_history', 'receive_estrogens', 'ovulation_induction']:
+            for v in VARIABLE_GROUPS["basic_info"]:
                 info = INPUT_VARIABLES[v]
                 data[v] = num_widget(v, info, lang, "s_") if info['type'] == 'number' else sel_widget(v, info, lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
+        # 手术信息列
         with c2:
             st.markdown(f'<div class="module-card"><div class="module-title surgery">🔪 {get_text("surgical_info", lang)}</div>', unsafe_allow_html=True)
-            for v in ['presenting_symptom', 'surgical_route', 'tumor_envelope_integrity', 'fertility_sparing_surgery', 'completeness_of_surgery', 'omentectomy', 'lymphadenectomy', 'postoperative_adjuvant_therapy']:
+            for v in VARIABLE_GROUPS["surgical_info"]:
                 data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
+        # 病理信息列
         with c3:
             st.markdown(f'<div class="module-card"><div class="module-title pathology">🔬 {get_text("pathology_info", lang)}</div>', unsafe_allow_html=True)
-            for v in ['histological_subtype', 'micropapillary', 'microinfiltration', 'psammoma_bodies_calcification', 'peritoneal_implantation', 'ascites_cytology', 'figo_staging', 'unilateral_or_bilateral', 'tumor_size', 'type_of_lesion', 'papillary_area_ratio']:
-                data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
+            for v in VARIABLE_GROUPS["pathology_info"]:
+                info = INPUT_VARIABLES[v]
+                data[v] = num_widget(v, info, lang, "s_") if info['type'] == 'number' else sel_widget(v, info, lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
+        # 肿瘤标志物行
         st.markdown(f'<div class="module-card"><div class="module-title markers">🧪 {get_text("tumor_markers", lang)}</div>', unsafe_allow_html=True)
         mc = st.columns(6)
-        for i, v in enumerate(['ca125', 'cea', 'ca199', 'afp', 'ca724', 'he4']):
+        for i, v in enumerate(VARIABLE_GROUPS["tumor_markers"]):
             with mc[i]: 
                 data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
         st.markdown('</div>', unsafe_allow_html=True)
