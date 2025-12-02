@@ -1510,7 +1510,7 @@ def main():
                         print(f"Scaler均值范围: [{prep.scaler.center_.min():.4f}, {prep.scaler.center_.max():.4f}]")
                 # 检查参数
                         with open(f"{model_dir}/best_parameters.json") as f:
-                        params = json.load(f)
+                            params = json.load(f)
                         print(f"模型参数: {params}")
 
                     # 检查时间切分
