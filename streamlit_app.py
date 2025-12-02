@@ -1104,66 +1104,109 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
 
 
 def preprocess(data, models):
-    """按VARIABLE_ORDER顺序预处理数据"""
+    """按VARIABLE_ORDER顺序预处理数据 - 与训练流程一致"""
     feats = []
+    
+    # 按照训练时的特征顺序提取
     for v in VARIABLE_ORDER:
         info = INPUT_VARIABLES[v]
         if info['type'] == 'select':
-            feats.append(encode_option(v, data.get(v, info.get('default'))))
+            val = encode_option(v, data.get(v, info.get('default')))
         else:
-            feats.append(float(data.get(v, info.get('default', 0))))
+            val = float(data.get(v, info.get('default', 0)))
+        feats.append(val)
     
-    X = np.array(feats).reshape(1, -1)
+    X = np.array(feats, dtype=np.float32).reshape(1, -1)
     
+    # 使用训练时保存的预处理器
     if models.get('prep') is not None:
         try: 
             X = models['prep'].transform(X)
-        except: 
-            X = (X - X.mean()) / (X.std() + 1e-8)
+        except Exception as e:
+            print(f"[WARNING] Preprocessor failed: {e}")
+            # 如果预处理器失败，使用简单标准化
+            X = (X - np.mean(X)) / (np.std(X) + 1e-8)
     else: 
-        X = (X - X.mean()) / (X.std() + 1e-8)
+        # 没有预处理器时使用简单标准化
+        X = (X - np.mean(X)) / (np.std(X) + 1e-8)
+    
     return X
 
 
 def predict(data, models):
-    """执行预测"""
+    """执行预测 - 与训练代码流程完全一致"""
     dev = models['device']
-    X = torch.tensor(preprocess(data, models), dtype=torch.float32, device=dev)
+    
+    # Step 1: 预处理
+    X_np = preprocess(data, models)
+    X = torch.tensor(X_np, dtype=torch.float32, device=dev)
     
     with torch.no_grad():
+        # Step 2: AE编码 (与训练代码一致)
         Z = models['ae'].encode(X)
+        
+        # Step 3: Transformer (与训练代码一致)
         T = models['trans'](Z)
+        
+        # Step 4: 融合特征 (与训练代码一致: Xf = concat([Z, T]))
         Xf = torch.cat([Z, T], dim=1)
         
-        r_ds = models['ds'](Xf).cpu().numpy()
-        r_ds = r_ds.item() if r_ds.ndim == 0 else r_ds[0]
+        # Step 5: DeepSurv预测
+        risk_ds_raw = models['ds'](Xf).cpu().numpy()
+        risk_ds = risk_ds_raw.item() if risk_ds_raw.ndim == 0 else risk_ds_raw[0]
         
+        # Step 6: DeepHit预测
         pmf = models['dh'](Xf).cpu().numpy()[0]
         
-        mn, mx = models['ds_mm']
-        p_ds = np.clip((r_ds - mn) / (mx - mn + 1e-8), 0, 1)
+        # Step 7: 归一化DeepSurv输出 (与训练代码一致)
+        # 训练代码: prob_ds_test = normalize_risk(risk_ds_test, min_ds, max_ds)
+        min_ds, max_ds = models['ds_mm']
         
+        # 使用与训练代码相同的normalize_risk函数
+        range_val = max_ds - min_ds
+        if range_val == 0:
+            p_ds = 0.5
+        else:
+            p_ds = (risk_ds - min_ds) / range_val
+            p_ds = np.clip(p_ds, 0, 1)
+        
+        # Step 8: DeepHit累积风险 (与训练代码一致)
+        # 训练代码: target_bin = actual_n_bins // 2
+        #           risk_dh_test = cif_test[:, target_bin]
         cif = np.cumsum(pmf)
         surv = 1 - cif
-        r_dh = cif[len(pmf) // 2]
+        target_bin = len(pmf) // 2
+        r_dh = cif[target_bin]
         
-        final = models['fusion'](
-            torch.tensor([[p_ds, r_dh]], dtype=torch.float32, device=dev)
-        ).cpu().numpy()
+        # Step 9: Fusion网络 (与训练代码一致)
+        # 训练代码: test_in = torch.tensor(np.column_stack([prob_ds_test, risk_dh_test]), ...)
+        #           p_final = fusion_net(test_in).cpu().numpy()
+        fusion_input = torch.tensor([[p_ds, r_dh]], dtype=torch.float32, device=dev)
+        final = models['fusion'](fusion_input).cpu().numpy()
         final = final.item() if final.ndim == 0 else final[0]
     
+    # 计算各时间点风险
     tc = models['time_cuts']
     tp = (tc[:-1] + tc[1:]) / 2
     n = len(cif)
     
-    def get_risk(t):
-        idx = min(max(np.searchsorted(tp, t), 0), n - 1)
+    def get_risk_at_time(target_time):
+        # 找到对应的时间bin
+        idx = np.searchsorted(tp, target_time)
+        idx = min(max(idx, 0), n - 1)
         return float(cif[idx])
     
     return {
-        'risk': float(final), 'surv': surv, 'cif': cif, 'tp': tp,
-        'r12': get_risk(12), 'r36': get_risk(36), 'r60': get_risk(60),
-        'p_ds': float(p_ds), 'r_dh': float(r_dh), 'raw_ds': float(r_ds)
+        'risk': float(final),
+        'surv': surv,
+        'cif': cif,
+        'tp': tp,
+        'r12': get_risk_at_time(12),
+        'r36': get_risk_at_time(36),
+        'r60': get_risk_at_time(60),
+        'p_ds': float(p_ds),
+        'r_dh': float(r_dh),
+        'raw_ds': float(risk_ds)
     }
 
 
