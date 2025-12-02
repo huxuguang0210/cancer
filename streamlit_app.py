@@ -1037,20 +1037,6 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
         
         missing = [f for f in req_files if not os.path.exists(os.path.join(model_dir, f))]
         
-        if ok:
-        # 打印关键信息
-        print(f"[INFO] 预处理器输入特征数: {prep.scaler.n_features_in_}")
-        print(f"[INFO] AE输入维度: {in_dim}")
-        print(f"[INFO] 潜在空间维度: {lat}")
-        print(f"[INFO] 融合特征维度: {fused}")
-        print(f"[INFO] DeepSurv输出范围: [{ds_mm[0]:.4f}, {ds_mm[1]:.4f}]")
-        print(f"[INFO] 时间切分点数: {len(time_cuts)}")
-        
-        # 检查ds_min_max范围是否合理
-        if ds_mm[1] - ds_mm[0] < 0.1:
-            print("[WARNING] DeepSurv输出范围过小，可能导致归一化问题！")
-
-        
         if not missing:
             with open(os.path.join(model_dir, "best_parameters.json")) as f: 
                 params = json.load(f)
@@ -1114,6 +1100,19 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             models[k].eval()
     
     models['ok'], models['log'] = ok, load_log
+
+    if ok:
+        # 打印关键信息
+        print(f"[INFO] 预处理器输入特征数: {prep.scaler.n_features_in_}")
+        print(f"[INFO] AE输入维度: {in_dim}")
+        print(f"[INFO] 潜在空间维度: {lat}")
+        print(f"[INFO] 融合特征维度: {fused}")
+        print(f"[INFO] DeepSurv输出范围: [{ds_mm[0]:.4f}, {ds_mm[1]:.4f}]")
+        print(f"[INFO] 时间切分点数: {len(time_cuts)}")
+        
+        # 检查ds_min_max范围是否合理
+        if ds_mm[1] - ds_mm[0] < 0.1:
+            print("[WARNING] DeepSurv输出范围过小，可能导致归一化问题！")
     return models
 
 
