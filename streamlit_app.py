@@ -63,7 +63,6 @@ st.markdown("""
         max-width: 100%;
     }
     
-    /* 状态框 */
     .status-box {
         padding: 10px 15px;
         border-radius: 8px;
@@ -80,13 +79,7 @@ st.markdown("""
         border-left: 5px solid #dc3545;
         color: #721c24;
     }
-    .status-warning {
-        background: linear-gradient(90deg, #fff3cd, #ffeeba);
-        border-left: 5px solid #ffc107;
-        color: #856404;
-    }
     
-    /* 顶部栏 */
     .top-bar {
         display: flex;
         justify-content: space-between;
@@ -118,7 +111,6 @@ st.markdown("""
         color: #666;
     }
     
-    /* 医院标题头 */
     .hospital-header {
         background: linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #1a5276 100%);
         padding: 1.2rem 2rem;
@@ -162,7 +154,6 @@ st.markdown("""
         margin-top: 0.3rem;
     }
     
-    /* 无Logo时的纯文字头部 */
     .hospital-header-nologo {
         background: linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #1a5276 100%);
         padding: 1.5rem 2rem;
@@ -189,7 +180,6 @@ st.markdown("""
         margin-top: 0.4rem;
     }
     
-    /* 模块卡片 */
     .module-card {
         background: #ffffff;
         border-radius: 8px;
@@ -211,7 +201,6 @@ st.markdown("""
     .module-title.surgery { background: linear-gradient(90deg, #e67e22, #d35400); }
     .module-title.markers { background: linear-gradient(90deg, #1abc9c, #16a085); }
     
-    /* 结果区域 */
     .result-section {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-radius: 12px;
@@ -229,7 +218,6 @@ st.markdown("""
         border-bottom: 2px solid #3498db;
     }
     
-    /* 图表容器 */
     .chart-container {
         background: white;
         border-radius: 10px;
@@ -239,7 +227,6 @@ st.markdown("""
         height: 100%;
     }
     
-    /* 建议卡片 */
     .advice-box {
         background: white;
         border-radius: 10px;
@@ -253,7 +240,6 @@ st.markdown("""
     .advice-box.high { border-color: #dc3545; background: linear-gradient(90deg, #fff0f0, white); }
     .advice-box h4 { margin: 0 0 0.6rem 0; font-size: 1rem; color: #2c3e50; }
     
-    /* 按钮 */
     .stButton > button {
         background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
         color: white;
@@ -269,15 +255,12 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
     }
     
-    /* 选择框 */
     .stSelectbox label { font-weight: 500; color: #2c3e50; font-size: 0.8rem; }
     
-    /* 标签页 */
     .stTabs [data-baseweb="tab-list"] { gap: 0; background: #f8f9fa; border-radius: 8px; padding: 3px; }
     .stTabs [data-baseweb="tab"] { background: transparent; border-radius: 5px; padding: 8px 16px; font-weight: 600; font-size: 0.9rem; }
     .stTabs [aria-selected="true"] { background: linear-gradient(135deg, #3498db, #2980b9); color: white !important; }
     
-    /* 指标卡片 */
     [data-testid="metric-container"] {
         background: white;
         padding: 0.6rem;
@@ -286,7 +269,6 @@ st.markdown("""
         border: 1px solid #e8e8e8;
     }
     
-    /* 页脚 */
     .footer {
         background: linear-gradient(135deg, #1a5276, #2980b9);
         padding: 1rem 1.5rem;
@@ -368,7 +350,7 @@ TRANSLATIONS = {
     "month_60": {"zh": "60个月", "en": "60M"},
     "model_status": {"zh": "模型状态", "en": "Model Status"},
     "model_loaded": {"zh": "✅ 已成功加载训练好的模型", "en": "✅ Trained model loaded successfully"},
-    "model_not_loaded": {"zh": "❌ 未找到训练好的模型，使用默认模型（预测结果不可靠）", "en": "❌ Trained model not found, using default model (unreliable predictions)"},
+    "model_not_loaded": {"zh": "❌ 未找到训练好的模型", "en": "❌ Trained model not found"},
     "debug_info": {"zh": "调试信息", "en": "Debug Info"},
     "input_data": {"zh": "输入数据", "en": "Input Data"},
     "processed_features": {"zh": "预处理后特征", "en": "Processed Features"},
@@ -386,354 +368,453 @@ TRANSLATIONS = {
     }
 }
 
-# ================== 输入变量（更新后）==================
+# ================== 变量顺序定义（与神经网络输入一致）==================
+VARIABLE_ORDER = [
+    "age",                          # 0: 年龄
+    "family_cancer_history",        # 1: 家族史
+    "sexual_history",               # 2: 性生活史
+    "parity",                       # 3: 生育
+    "menopausal_status",            # 4: 绝经
+    "comorbidities",                # 5: 内科疾病
+    "presenting_symptom",           # 6: 症状
+    "surgical_route",               # 7: 手术方式
+    "tumor_envelope_integrity",     # 8: 肿物破裂
+    "fertility_sparing_surgery",    # 9: 保留生育功能
+    "completeness_of_surgery",      # 10: 全面分期
+    "omentectomy",                  # 11: 清大网
+    "lymphadenectomy",              # 12: 清淋巴
+    "histological_subtype",         # 13: 病理类型
+    "micropapillary",               # 14: 微乳头
+    "microinfiltration",            # 15: 微浸润
+    "psammoma_bodies_calcification",# 16: 钙化砂体
+    "peritoneal_implantation",      # 17: 腹膜种植
+    "ascites_cytology",             # 18: 腹水细胞学
+    "figo_staging",                 # 19: 分期
+    "unilateral_or_bilateral",      # 20: 单侧/双侧
+    "tumor_size",                   # 21: 肿瘤直径
+    "ca125",                        # 22: CA125
+    "cea",                          # 23: CEA
+    "ca199",                        # 24: CA199
+    "afp",                          # 25: AFP
+    "ca724",                        # 26: CA724
+    "he4",                          # 27: HE4
+    "smoking_drinking_history",     # 28: 吸烟史
+    "receive_estrogens",            # 29: 雌激素暴露史
+    "ovulation_induction",          # 30: 促排卵后
+    "postoperative_adjuvant_therapy",# 31: 术后化疗
+    "type_of_lesion",               # 32: 病灶类型
+    "papillary_area_ratio",         # 33: 乳头面积占比
+]
+
+# ================== 输入变量定义（带高风险默认值）==================
 INPUT_VARIABLES = {
-    # 基本信息
+    # 0: 年龄
     "age": {
         "zh": "年龄", 
         "en": "Age", 
-        "type": "number", 
-        "min": 18, 
-        "max": 100, 
-        "default": 50, 
-        "unit": {"zh": "岁", "en": "yrs"}
+        "type": "select",
+        "default": ">40",
+        "options": {
+            "<=40": {"zh": "≤40岁", "en": "≤40 years"}, 
+            ">40": {"zh": ">40岁", "en": ">40 years"}
+        }
     },
+    # 1: 家族史
     "family_cancer_history": {
         "zh": "家族史", 
         "en": "Family Cancer History", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 2: 性生活史
     "sexual_history": {
         "zh": "性生活史", 
         "en": "Sexual History", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 3: 生育
     "parity": {
         "zh": "生育", 
         "en": "Parity", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 4: 绝经
     "menopausal_status": {
         "zh": "绝经", 
         "en": "Menopausal Status", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 5: 内科疾病
     "comorbidities": {
         "zh": "内科疾病", 
         "en": "Comorbidities", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    "smoking_drinking_history": {
-        "zh": "吸烟史", 
-        "en": "Smoking and Drinking History", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "receive_estrogens": {
-        "zh": "雌激素暴露史", 
-        "en": "Receive Estrogens", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "ovulation_induction": {
-        "zh": "促排卵后", 
-        "en": "Ovulation Induction", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
+    # 6: 症状
     "presenting_symptom": {
         "zh": "症状", 
         "en": "Presenting Symptom", 
-        "type": "select", 
+        "type": "select",
+        "default": "abnormal_bleeding",
         "options": {
-            "abdominal": {"zh": "腹痛、腹胀", "en": "Abdominal Pain/Bloating"}, 
-            "checkup": {"zh": "体检发现", "en": "Found During Checkup"}, 
-            "bleeding": {"zh": "异常流血、不规律流血", "en": "Abnormal Bleeding"}
+            "abdominal_pain_bloating": {"zh": "腹痛、腹胀", "en": "Abdominal Pain/Bloating"}, 
+            "physical_examination": {"zh": "体检发现", "en": "Physical Examination"},
+            "abnormal_bleeding": {"zh": "异常流血、不规律流血", "en": "Abnormal/Irregular Bleeding"}
         }
     },
-    
-    # 手术信息
+    # 7: 手术方式
     "surgical_route": {
         "zh": "手术方式", 
         "en": "Surgical Route", 
-        "type": "select", 
+        "type": "select",
+        "default": "laparotomy",
         "options": {
             "laparotomy": {"zh": "开腹", "en": "Laparotomy"}, 
             "laparoscopy": {"zh": "腹腔镜", "en": "Laparoscopy"}
         }
     },
+    # 8: 肿物破裂
     "tumor_envelope_integrity": {
         "zh": "肿物破裂", 
         "en": "Tumor Envelope Integrity", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 9: 保留生育功能
     "fertility_sparing_surgery": {
         "zh": "保留生育功能", 
         "en": "Fertility-Sparing Surgery", 
-        "type": "select", 
+        "type": "select",
+        "default": "no",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 10: 全面分期
     "completeness_of_surgery": {
         "zh": "全面分期", 
         "en": "Completeness of Surgery", 
-        "type": "select", 
+        "type": "select",
+        "default": "no",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 11: 清大网
     "omentectomy": {
         "zh": "清大网", 
         "en": "Omentectomy", 
-        "type": "select", 
+        "type": "select",
+        "default": "no",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 12: 清淋巴
     "lymphadenectomy": {
         "zh": "清淋巴", 
         "en": "Lymphadenectomy", 
-        "type": "select", 
+        "type": "select",
+        "default": "no",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    "postoperative_adjuvant_therapy": {
-        "zh": "术后化疗", 
-        "en": "Postoperative Adjuvant Therapy", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    
-    # 病理信息
+    # 13: 病理类型
     "histological_subtype": {
         "zh": "病理类型", 
         "en": "Histological Subtype", 
-        "type": "select", 
+        "type": "select",
+        "default": "serous",
         "options": {
-            "serous": {"zh": "浆液性", "en": "Serous"}, 
-            "mucinous": {"zh": "黏液性", "en": "Mucinous"}, 
-            "endometrioid": {"zh": "子宫内膜样", "en": "Endometrioid"}, 
-            "clear_cell": {"zh": "透明细胞", "en": "Clear Cell"}, 
-            "other": {"zh": "其他", "en": "Other"}
+            "serous": {"zh": "浆液性 (0)", "en": "Serous (0)"}, 
+            "mucinous": {"zh": "粘液性 (1)", "en": "Mucinous (1)"}, 
+            "seromucinous": {"zh": "浆粘液性 (2)", "en": "Seromucinous (2)"},
+            "endometrioid": {"zh": "子宫内膜样 (3)", "en": "Endometrioid (3)"},
+            "clear_cell": {"zh": "透明细胞 (4)", "en": "Clear Cell (4)"},
+            "brenner": {"zh": "Brenner瘤 (5)", "en": "Brenner Tumor (5)"}
         }
     },
+    # 14: 微乳头
     "micropapillary": {
         "zh": "微乳头", 
         "en": "Micropapillary", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 15: 微浸润
     "microinfiltration": {
         "zh": "微浸润", 
         "en": "Microinfiltration", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 16: 钙化砂体
     "psammoma_bodies_calcification": {
         "zh": "钙化砂体", 
         "en": "Psammoma Bodies and Calcification", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 17: 腹膜种植
     "peritoneal_implantation": {
         "zh": "腹膜种植", 
         "en": "Peritoneal Implantation", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 18: 腹水细胞学
     "ascites_cytology": {
         "zh": "腹水细胞学", 
         "en": "Ascites Cytology", 
-        "type": "select", 
+        "type": "select",
+        "default": "yes",
         "options": {
             "no": {"zh": "否", "en": "No"}, 
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
+    # 19: 分期
     "figo_staging": {
         "zh": "分期", 
         "en": "FIGO Staging", 
-        "type": "select", 
+        "type": "select",
+        "default": "III",
         "options": {
             "I": {"zh": "I期", "en": "Stage I"}, 
             "II": {"zh": "II期", "en": "Stage II"}, 
             "III": {"zh": "III期", "en": "Stage III"}
         }
     },
+    # 20: 单侧/双侧
     "unilateral_or_bilateral": {
         "zh": "单侧/双侧", 
         "en": "Unilateral or Bilateral", 
-        "type": "select", 
+        "type": "select",
+        "default": "bilateral",
         "options": {
             "unilateral": {"zh": "单侧", "en": "Unilateral"}, 
             "bilateral": {"zh": "双侧", "en": "Bilateral"}
         }
     },
+    # 21: 肿瘤直径
     "tumor_size": {
         "zh": "肿瘤直径", 
         "en": "Tumor Size", 
         "type": "number", 
-        "min": 0, 
+        "min": 0.1, 
         "max": 50, 
-        "default": 5, 
+        "default": 15.0,
         "unit": {"zh": "cm", "en": "cm"}
     },
-    "type_of_lesion": {
-        "zh": "病灶类型", 
-        "en": "Type of Lesion", 
-        "type": "select", 
-        "options": {
-            "exophytic": {"zh": "外生型", "en": "Exophytic"}, 
-            "endophytic": {"zh": "内生型", "en": "Endophytic"}
-        }
-    },
-    "papillary_area_ratio": {
-        "zh": "乳头面积占比", 
-        "en": "Papillary Area Ratio", 
-        "type": "number", 
-        "min": 0, 
-        "max": 100, 
-        "default": 0, 
-        "unit": {"zh": "%", "en": "%"}
-    },
-    
-    # 肿瘤标志物
+    # 22: CA125
     "ca125": {
         "zh": "CA125", 
         "en": "CA125", 
-        "type": "select", 
+        "type": "select",
+        "default": "abnormal",
         "options": {
             "normal": {"zh": "正常 (0-35 U/mL)", "en": "Normal (0-35 U/mL)"}, 
             "abnormal": {"zh": "异常 (>35 U/mL)", "en": "Abnormal (>35 U/mL)"}
         }
     },
+    # 23: CEA
     "cea": {
         "zh": "CEA", 
         "en": "CEA", 
-        "type": "select", 
+        "type": "select",
+        "default": "abnormal",
         "options": {
             "normal": {"zh": "正常 (0-5 ng/mL)", "en": "Normal (0-5 ng/mL)"}, 
             "abnormal": {"zh": "异常 (>5 ng/mL)", "en": "Abnormal (>5 ng/mL)"}
         }
     },
+    # 24: CA199
     "ca199": {
         "zh": "CA199", 
         "en": "CA199", 
-        "type": "select", 
+        "type": "select",
+        "default": "abnormal",
         "options": {
             "normal": {"zh": "正常 (0-37 U/mL)", "en": "Normal (0-37 U/mL)"}, 
             "abnormal": {"zh": "异常 (>37 U/mL)", "en": "Abnormal (>37 U/mL)"}
         }
     },
+    # 25: AFP
     "afp": {
         "zh": "AFP", 
         "en": "AFP", 
-        "type": "select", 
+        "type": "select",
+        "default": "normal",
         "options": {
             "normal": {"zh": "正常 (0-9 ng/mL)", "en": "Normal (0-9 ng/mL)"}, 
             "abnormal": {"zh": "异常 (>9 ng/mL)", "en": "Abnormal (>9 ng/mL)"}
         }
     },
+    # 26: CA724
     "ca724": {
         "zh": "CA724", 
         "en": "CA724", 
-        "type": "select", 
+        "type": "select",
+        "default": "abnormal",
         "options": {
             "normal": {"zh": "正常 (0-6.9 U/mL)", "en": "Normal (0-6.9 U/mL)"}, 
             "abnormal": {"zh": "异常 (>6.9 U/mL)", "en": "Abnormal (>6.9 U/mL)"}
         }
     },
+    # 27: HE4
     "he4": {
         "zh": "HE4", 
         "en": "HE4", 
-        "type": "select", 
+        "type": "select",
+        "default": "abnormal",
         "options": {
             "normal": {"zh": "正常 (0-140 pmol/L)", "en": "Normal (0-140 pmol/L)"}, 
             "abnormal": {"zh": "异常 (>140 pmol/L)", "en": "Abnormal (>140 pmol/L)"}
         }
+    },
+    # 28: 吸烟史
+    "smoking_drinking_history": {
+        "zh": "吸烟史", 
+        "en": "Smoking and Drinking History", 
+        "type": "select",
+        "default": "yes",
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    # 29: 雌激素暴露史
+    "receive_estrogens": {
+        "zh": "雌激素暴露史", 
+        "en": "Receive Estrogens", 
+        "type": "select",
+        "default": "yes",
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    # 30: 促排卵后
+    "ovulation_induction": {
+        "zh": "促排卵后", 
+        "en": "Ovulation Induction", 
+        "type": "select",
+        "default": "yes",
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    # 31: 术后化疗
+    "postoperative_adjuvant_therapy": {
+        "zh": "术后化疗", 
+        "en": "Postoperative Adjuvant Therapy", 
+        "type": "select",
+        "default": "no",
+        "options": {
+            "no": {"zh": "否", "en": "No"}, 
+            "yes": {"zh": "是", "en": "Yes"}
+        }
+    },
+    # 32: 病灶类型
+    "type_of_lesion": {
+        "zh": "病灶类型", 
+        "en": "Type of Lesion", 
+        "type": "select",
+        "default": "endophytic",
+        "options": {
+            "exophytic": {"zh": "外生型", "en": "Exophytic"}, 
+            "endophytic": {"zh": "内生型", "en": "Endophytic"}
+        }
+    },
+    # 33: 乳头面积占比
+    "papillary_area_ratio": {
+        "zh": "乳头面积占比", 
+        "en": "Papillary Area Ratio", 
+        "type": "select",
+        "default": ">50%",
+        "options": {
+            "<=50%": {"zh": "≤50%", "en": "≤50%"}, 
+            ">50%": {"zh": ">50%", "en": ">50%"}
+        }
     }
 }
 
-# 变量分组定义
+# ================== 变量分组定义（用于界面显示）==================
 VARIABLE_GROUPS = {
-    "basic": [
+    "basic_info": [
         "age", "family_cancer_history", "sexual_history", "parity", 
         "menopausal_status", "comorbidities", "smoking_drinking_history", 
-        "receive_estrogens", "ovulation_induction", "presenting_symptom"
+        "receive_estrogens", "ovulation_induction"
     ],
-    "surgical": [
-        "surgical_route", "tumor_envelope_integrity", "fertility_sparing_surgery",
-        "completeness_of_surgery", "omentectomy", "lymphadenectomy", 
-        "postoperative_adjuvant_therapy"
+    "surgical_info": [
+        "presenting_symptom", "surgical_route", "tumor_envelope_integrity", 
+        "fertility_sparing_surgery", "completeness_of_surgery", "omentectomy", 
+        "lymphadenectomy", "postoperative_adjuvant_therapy"
     ],
-    "pathology": [
-        "histological_subtype", "micropapillary", "microinfiltration",
-        "psammoma_bodies_calcification", "peritoneal_implantation", "ascites_cytology",
-        "figo_staging", "unilateral_or_bilateral", "tumor_size", 
-        "type_of_lesion", "papillary_area_ratio"
+    "pathology_info": [
+        "histological_subtype", "micropapillary", "microinfiltration", 
+        "psammoma_bodies_calcification", "peritoneal_implantation", "ascites_cytology", 
+        "figo_staging", "unilateral_or_bilateral", "tumor_size", "type_of_lesion", 
+        "papillary_area_ratio"
     ],
-    "markers": [
+    "tumor_markers": [
         "ca125", "cea", "ca199", "afp", "ca724", "he4"
     ]
 }
 
-# ================== 数据预处理类（与训练代码一致）==================
+# ================== 数据预处理类 ==================
 class DataPreprocessor:
-    """数据预处理器 - 与训练代码完全一致"""
+    """数据预处理器"""
     def __init__(self, n_features_select=None, scaler_type='robust'):
         self.n_features_select = n_features_select
         self.scaler_type = scaler_type
@@ -766,10 +847,8 @@ class DataPreprocessor:
         return X_scaled
 
 
-# ================== 模型类（与训练代码完全一致）==================
-
+# ================== 模型类 ==================
 class SEBlock(nn.Module):
-    """Squeeze-and-Excitation Block"""
     def __init__(self, dim, reduction=4):
         super().__init__()
         self.fc = nn.Sequential(
@@ -780,12 +859,10 @@ class SEBlock(nn.Module):
         )
     
     def forward(self, x):
-        scale = self.fc(x)
-        return x * scale
+        return x * self.fc(x)
 
 
 class ResidualBlock(nn.Module):
-    """残差块 + SE注意力"""
     def __init__(self, dim, dropout=0.3, use_se=True):
         super().__init__()
         self.block = nn.Sequential(
@@ -807,21 +884,15 @@ class ResidualBlock(nn.Module):
 
 
 class EnhancedDeepSurv(nn.Module):
-    """增强版DeepSurv - 与训练代码一致"""
     def __init__(self, input_dim, hidden_dims=[256, 128, 64], drop_rate=0.3, n_res_blocks=2):
         super().__init__()
-        
         self.input_proj = nn.Sequential(
             nn.Linear(input_dim, hidden_dims[0]),
             nn.BatchNorm1d(hidden_dims[0]),
             nn.GELU(),
             nn.Dropout(drop_rate)
         )
-        
-        self.res_blocks = nn.ModuleList([
-            ResidualBlock(hidden_dims[0], drop_rate) for _ in range(n_res_blocks)
-        ])
-        
+        self.res_blocks = nn.ModuleList([ResidualBlock(hidden_dims[0], drop_rate) for _ in range(n_res_blocks)])
         self.down_layers = nn.ModuleList()
         for i in range(len(hidden_dims) - 1):
             self.down_layers.append(nn.Sequential(
@@ -830,7 +901,6 @@ class EnhancedDeepSurv(nn.Module):
                 nn.GELU(),
                 nn.Dropout(drop_rate)
             ))
-        
         self.output_layer = nn.Linear(hidden_dims[-1], 1)
         self._init_weights()
         
@@ -851,10 +921,8 @@ class EnhancedDeepSurv(nn.Module):
 
 
 class EnhancedDeepHit(nn.Module):
-    """增强版DeepHit - 与训练代码一致"""
     def __init__(self, input_dim, hidden_dims=[256, 128, 64], num_durations=10, drop_rate=0.3):
         super().__init__()
-        
         layers = []
         in_d = input_dim
         for h_dim in hidden_dims:
@@ -865,7 +933,6 @@ class EnhancedDeepHit(nn.Module):
                 nn.Dropout(drop_rate)
             ])
             in_d = h_dim
-            
         layers.append(nn.Linear(in_d, num_durations))
         self.net = nn.Sequential(*layers)
         self._init_weights()
@@ -882,11 +949,8 @@ class EnhancedDeepHit(nn.Module):
 
 
 class EnhancedDenoisingAE(nn.Module):
-    """增强版去噪自编码器 - 与训练代码一致"""
     def __init__(self, input_dim, hidden_dims=[256, 128], latent_dim=64, dropout=0.2):
         super().__init__()
-        
-        # 编码器
         encoder_layers = []
         in_d = input_dim
         for h_dim in hidden_dims:
@@ -900,7 +964,6 @@ class EnhancedDenoisingAE(nn.Module):
         encoder_layers.append(nn.Linear(in_d, latent_dim))
         self.encoder = nn.Sequential(*encoder_layers)
         
-        # 解码器
         decoder_layers = []
         in_d = latent_dim
         for h_dim in reversed(hidden_dims):
@@ -916,29 +979,19 @@ class EnhancedDenoisingAE(nn.Module):
         
     def forward(self, x, noise_factor=0.1):
         if self.training and noise_factor > 0:
-            noise = torch.randn_like(x) * noise_factor
-            x_noisy = x + noise
-        else:
-            x_noisy = x
-        z = self.encoder(x_noisy)
-        recon = self.decoder(z)
-        return recon, z
+            x = x + torch.randn_like(x) * noise_factor
+        z = self.encoder(x)
+        return self.decoder(z), z
     
     def encode(self, x):
         return self.encoder(x)
 
 
 class EnhancedTransformer(nn.Module):
-    """增强版Transformer - 与训练代码完全一致"""
     def __init__(self, latent_dim, n_heads=4, ff_dim=256, n_layers=2, dropout=0.1):
         super().__init__()
-        
-        # 确保latent_dim能被n_heads整除
         while latent_dim % n_heads != 0 and n_heads > 1:
             n_heads -= 1
-        self.n_heads = n_heads
-        
-        # 使用与训练代码一致的属性名称
         self.input_norm = nn.LayerNorm(latent_dim)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=latent_dim, nhead=n_heads, dim_feedforward=ff_dim,
@@ -961,7 +1014,6 @@ class EnhancedTransformer(nn.Module):
 
 
 class LearnableFusion(nn.Module):
-    """可学习融合网络 - 与训练代码一致"""
     def __init__(self, input_dim=2, hidden_dim=32):
         super().__init__()
         self.net = nn.Sequential(
@@ -983,16 +1035,32 @@ class LearnableFusion(nn.Module):
 def get_text(key, lang): 
     return TRANSLATIONS.get(key, {}).get(lang, key)
 
+
 def encode_option(var, opt):
+    """将选项值编码为数值"""
+    special_encoding = {
+        "histological_subtype": {
+            "serous": 0, "mucinous": 1, "seromucinous": 2,
+            "endometrioid": 3, "clear_cell": 4, "brenner": 5
+        },
+        "age": {"<=40": 0, ">40": 1},
+        "papillary_area_ratio": {"<=50%": 0, ">50%": 1},
+        "figo_staging": {"I": 0, "II": 1, "III": 2}
+    }
+    
+    if var in special_encoding and opt in special_encoding[var]:
+        return float(special_encoding[var][opt])
+    
     opts = INPUT_VARIABLES.get(var, {}).get("options", {})
     try: 
         return float(list(opts.keys()).index(opt))
     except: 
         return 0.0
 
+
 @st.cache_resource
 def load_models(model_dir="results_clinical_enhanced_v3"):
-    """加载模型，返回详细的加载状态日志"""
+    """加载模型"""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = {}
     ok = False
@@ -1009,7 +1077,6 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             'time_cuts.npy', 'ds_min_max.npy', 'best_parameters.json'
         ]
         
-        # 检查每个文件
         missing_files = []
         load_log.append("\n📋 文件检查:")
         for f in req_files:
@@ -1025,91 +1092,66 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
         if not missing_files:
             load_log.append("\n🔄 正在加载模型...")
             
-            # 加载参数
             with open(os.path.join(model_dir, "best_parameters.json")) as f: 
                 params = json.load(f)
-            load_log.append(f"  ✅ 参数加载成功: {list(params.keys())}")
+            load_log.append(f"  ✅ 参数加载成功")
             
-            # 加载预处理器
             prep = joblib.load(os.path.join(model_dir, "preprocessor.joblib"))
             load_log.append(f"  ✅ 预处理器加载成功")
             
-            # 加载时间切分和归一化参数
             time_cuts = np.load(os.path.join(model_dir, "time_cuts.npy"))
             ds_mm = np.load(os.path.join(model_dir, "ds_min_max.npy"))
             load_log.append(f"  ✅ 时间切分: {len(time_cuts)} 个点")
-            load_log.append(f"  ✅ DeepSurv范围: [{ds_mm[0]:.2f}, {ds_mm[1]:.2f}]")
             
-            # 确定输入维度
             in_dim = prep.scaler.n_features_in_
             if hasattr(prep, 'selector') and prep.selector is not None:
                 in_dim = prep.selector.k if hasattr(prep.selector, 'k') else in_dim
             load_log.append(f"  📊 输入维度: {in_dim}")
             
-            # 获取模型参数
             ae_h1 = params.get('ae_h1', 256)
             ae_h2 = params.get('ae_h2', 128)
             lat = params.get('ae_latent', 64)
-            fused = lat * 2  # latent + transformer output
+            fused = lat * 2
             
-            load_log.append(f"  📊 AE隐藏层: [{ae_h1}, {ae_h2}], 潜在维度: {lat}")
-            load_log.append(f"  📊 融合特征维度: {fused}")
-            
-            # 加载自编码器
             ae = EnhancedDenoisingAE(in_dim, [ae_h1, ae_h2], lat)
             ae.load_state_dict(torch.load(os.path.join(model_dir, "model_ae.pt"), map_location=device))
             ae.eval()
             load_log.append("  ✅ AutoEncoder 加载成功")
             
-            # 加载Transformer
             trans = EnhancedTransformer(lat, n_heads=4, ff_dim=256, n_layers=2)
             trans.load_state_dict(torch.load(os.path.join(model_dir, "model_trans.pt"), map_location=device))
             trans.eval()
             load_log.append("  ✅ Transformer 加载成功")
             
-            # 加载DeepSurv
-            ds_h1 = params.get('ds_h1', 256)
-            ds_h2 = params.get('ds_h2', 128)
-            ds_h3 = params.get('ds_h3', 64)
-            ds_drop = params.get('ds_drop', 0.3)
-            
-            ds = EnhancedDeepSurv(fused, [ds_h1, ds_h2, ds_h3], drop_rate=ds_drop)
+            ds_h1, ds_h2, ds_h3 = params.get('ds_h1', 256), params.get('ds_h2', 128), params.get('ds_h3', 64)
+            ds = EnhancedDeepSurv(fused, [ds_h1, ds_h2, ds_h3], drop_rate=params.get('ds_drop', 0.3))
             ds.load_state_dict(torch.load(os.path.join(model_dir, "model_deepsurv.pt"), map_location=device))
             ds.eval()
-            load_log.append(f"  ✅ DeepSurv 加载成功 (hidden: [{ds_h1}, {ds_h2}, {ds_h3}])")
+            load_log.append("  ✅ DeepSurv 加载成功")
             
-            # 加载DeepHit
-            dh_h1 = params.get('dh_h1', 256)
-            dh_h2 = params.get('dh_h2', 128)
+            dh_h1, dh_h2 = params.get('dh_h1', 256), params.get('dh_h2', 128)
             n_durations = len(time_cuts) - 1
-            
             dh = EnhancedDeepHit(fused, [dh_h1, dh_h2], n_durations)
             dh.load_state_dict(torch.load(os.path.join(model_dir, "model_deephit.pt"), map_location=device))
             dh.eval()
-            load_log.append(f"  ✅ DeepHit 加载成功 (hidden: [{dh_h1}, {dh_h2}], durations: {n_durations})")
+            load_log.append("  ✅ DeepHit 加载成功")
             
-            # 加载Fusion
             fusion = LearnableFusion()
             fusion.load_state_dict(torch.load(os.path.join(model_dir, "model_fusion.pt"), map_location=device))
             fusion.eval()
             load_log.append("  ✅ Fusion 加载成功")
             
             models = {
-                'ae': ae.to(device), 
-                'trans': trans.to(device), 
-                'ds': ds.to(device), 
-                'dh': dh.to(device), 
-                'fusion': fusion.to(device), 
-                'prep': prep, 
-                'time_cuts': time_cuts, 
-                'ds_mm': ds_mm, 
-                'device': device,
-                'params': params
+                'ae': ae.to(device), 'trans': trans.to(device), 
+                'ds': ds.to(device), 'dh': dh.to(device), 
+                'fusion': fusion.to(device), 'prep': prep, 
+                'time_cuts': time_cuts, 'ds_mm': ds_mm, 
+                'device': device, 'params': params
             }
             ok = True
             load_log.append("\n🎉 所有模型加载成功！")
         else:
-            load_log.append(f"\n❌ 缺少 {len(missing_files)} 个文件，无法加载模型")
+            load_log.append(f"\n❌ 缺少 {len(missing_files)} 个文件")
     
     except Exception as e:
         load_log.append(f"\n❌ 加载错误: {str(e)}")
@@ -1117,23 +1159,17 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
         load_log.append(f"详细错误:\n{traceback.format_exc()}")
     
     if not ok:
-        load_log.append("\n⚠️ 使用未训练的默认模型（随机权重）")
-        in_dim = len(INPUT_VARIABLES)
-        lat = 64
-        fused = 128
-        n_bins = 10
-        
+        load_log.append("\n⚠️ 使用默认模型")
+        in_dim = len(VARIABLE_ORDER)
+        lat, fused, n_bins = 64, 128, 10
         models = {
             'ae': EnhancedDenoisingAE(in_dim, [256, 128], lat).to(device), 
             'trans': EnhancedTransformer(lat).to(device), 
             'ds': EnhancedDeepSurv(fused, [256, 128, 64]).to(device), 
             'dh': EnhancedDeepHit(fused, [256, 128], n_bins).to(device), 
             'fusion': LearnableFusion().to(device), 
-            'prep': None, 
-            'time_cuts': np.linspace(0, 120, 11), 
-            'ds_mm': np.array([-5., 5.]), 
-            'device': device,
-            'params': {}
+            'prep': None, 'time_cuts': np.linspace(0, 120, 11), 
+            'ds_mm': np.array([-5., 5.]), 'device': device, 'params': {}
         }
         for k in ['ae', 'trans', 'ds', 'dh', 'fusion']: 
             models[k].eval()
@@ -1144,12 +1180,12 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
 
 
 def preprocess(data, models):
-    """将输入数据转换为模型输入张量"""
+    """将输入数据转换为模型输入张量，按VARIABLE_ORDER顺序"""
     feats = []
-    for v in INPUT_VARIABLES:
+    for v in VARIABLE_ORDER:
         info = INPUT_VARIABLES[v]
         if info['type'] == 'select':
-            feats.append(encode_option(v, data.get(v)))
+            feats.append(encode_option(v, data.get(v, info.get('default'))))
         else:
             feats.append(float(data.get(v, info.get('default', 0))))
     
@@ -1158,8 +1194,7 @@ def preprocess(data, models):
     if models.get('prep') is not None:
         try: 
             X = models['prep'].transform(X)
-        except Exception as e:
-            st.warning(f"预处理警告: {e}")
+        except: 
             X = (X - X.mean()) / (X.std() + 1e-8)
     else: 
         X = (X - X.mean()) / (X.std() + 1e-8)
@@ -1168,46 +1203,34 @@ def preprocess(data, models):
 
 
 def normalize_risk(risk_score, min_val, max_val):
-    """归一化风险分数"""
     range_val = max_val - min_val
     if range_val == 0:
         return np.full_like(risk_score, 0.5)
-    normalized = (risk_score - min_val) / range_val
-    return np.clip(normalized, 0, 1)
+    return np.clip((risk_score - min_val) / range_val, 0, 1)
 
 
 def predict(data, models):
-    """执行预测并返回结果"""
+    """执行预测"""
     dev = models['device']
     X = torch.tensor(preprocess(data, models), dtype=torch.float32, device=dev)
     
     with torch.no_grad():
-        # 编码
         Z = models['ae'].encode(X)
-        # Transformer处理
         T = models['trans'](Z)
-        # 融合特征
         Xf = torch.cat([Z, T], dim=1)
         
-        # DeepSurv预测
         r_ds = models['ds'](Xf).cpu().numpy()
         r_ds = r_ds.item() if r_ds.ndim == 0 else r_ds[0]
         
-        # DeepHit预测
         pmf = models['dh'](Xf).cpu().numpy()[0]
         
-        # 归一化DeepSurv输出
         mn, mx = models['ds_mm']
         p_ds = normalize_risk(np.array([r_ds]), mn, mx)[0]
         
-        # 计算累积风险
         cif = np.cumsum(pmf)
         surv = 1 - cif
-        
-        # 中位时间点的DeepHit风险
         r_dh = cif[len(pmf) // 2]
         
-        # 融合预测
         final = models['fusion'](
             torch.tensor([[p_ds, r_dh]], dtype=torch.float32, device=dev)
         ).cpu().numpy()
@@ -1217,23 +1240,16 @@ def predict(data, models):
     tp = (tc[:-1] + tc[1:]) / 2
     n = len(cif)
     
-    # 计算特定时间点的风险
     def get_risk_at_time(target_time):
         idx = np.searchsorted(tp, target_time)
         idx = min(max(idx, 0), n - 1)
         return float(cif[idx])
     
     return {
-        'risk': float(final), 
-        'surv': surv, 
-        'cif': cif, 
-        'tp': tp, 
-        'r12': get_risk_at_time(12), 
-        'r36': get_risk_at_time(36), 
-        'r60': get_risk_at_time(60),
-        'p_ds': float(p_ds),
-        'r_dh': float(r_dh),
-        'raw_ds': float(r_ds)
+        'risk': float(final), 'surv': surv, 'cif': cif, 'tp': tp, 
+        'r12': get_risk_at_time(12), 'r36': get_risk_at_time(36), 
+        'r60': get_risk_at_time(60), 'p_ds': float(p_ds),
+        'r_dh': float(r_dh), 'raw_ds': float(r_ds)
     }
 
 
@@ -1244,8 +1260,7 @@ def batch_predict(df, models, lang):
     
     for i, row in df.iterrows():
         data = {}
-        for v in INPUT_VARIABLES:
-            # 尝试匹配中英文列名
+        for v in VARIABLE_ORDER:
             for lg in ['zh', 'en']:
                 col = INPUT_VARIABLES[v][lg]
                 if col in row: 
@@ -1281,12 +1296,14 @@ def batch_predict(df, models, lang):
 
 def make_template(lang):
     """生成批量预测模板"""
-    cols = [get_text("patient_id", lang)] + [INPUT_VARIABLES[v][lang] for v in INPUT_VARIABLES]
+    cols = [get_text("patient_id", lang)] + [INPUT_VARIABLES[v][lang] for v in VARIABLE_ORDER]
     data = {cols[0]: [1, 2, 3]}
     
-    for i, (v, info) in enumerate(INPUT_VARIABLES.items()):
+    for i, v in enumerate(VARIABLE_ORDER):
+        info = INPUT_VARIABLES[v]
         if info['type'] == 'select':
-            data[cols[i + 1]] = [list(info['options'].keys())[0]] * 3
+            default_val = info.get('default', list(info['options'].keys())[0])
+            data[cols[i + 1]] = [default_val] * 3
         else:
             data[cols[i + 1]] = [info.get('default', 0)] * 3
     
@@ -1295,7 +1312,6 @@ def make_template(lang):
 
 # ================== 图表函数 ==================
 def make_gauge(risk, lang):
-    """创建风险仪表盘"""
     if risk < 0.3: 
         col, lv = "#27ae60", get_text("low_risk", lang)
     elif risk < 0.6: 
@@ -1304,19 +1320,13 @@ def make_gauge(risk, lang):
         col, lv = "#e74c3c", get_text("high_risk", lang)
     
     fig = go.Figure(go.Indicator(
-        mode="gauge+number", 
-        value=risk * 100,
+        mode="gauge+number", value=risk * 100,
         number={'suffix': '%', 'font': {'size': 64, 'color': col, 'family': 'Arial Black'}},
-        title={
-            'text': f"<b>{get_text('overall_risk', lang)}</b><br><span style='font-size:26px;color:{col}'>{lv}</span>", 
-            'font': {'size': 20}
-        },
+        title={'text': f"<b>{get_text('overall_risk', lang)}</b><br><span style='font-size:26px;color:{col}'>{lv}</span>", 'font': {'size': 20}},
         gauge={
             'axis': {'range': [0, 100], 'tickwidth': 2, 'tickcolor': '#555', 'tickfont': {'size': 16}, 'dtick': 25},
-            'bar': {'color': col, 'thickness': 0.7}, 
-            'bgcolor': '#f0f0f0', 
-            'borderwidth': 2, 
-            'bordercolor': '#888',
+            'bar': {'color': col, 'thickness': 0.7}, 'bgcolor': '#f0f0f0', 
+            'borderwidth': 2, 'bordercolor': '#888',
             'steps': [
                 {'range': [0, 30], 'color': 'rgba(39,174,96,0.2)'}, 
                 {'range': [30, 60], 'color': 'rgba(243,156,18,0.2)'}, 
@@ -1329,116 +1339,58 @@ def make_gauge(risk, lang):
 
 
 def make_time_bar(r12, r36, r60, lang):
-    """创建时间点风险柱状图"""
     labels = [get_text('month_12', lang), get_text('month_36', lang), get_text('month_60', lang)]
     vals = [r12 * 100, r36 * 100, r60 * 100]
     cols = ['#27ae60' if v < 30 else ('#f39c12' if v < 60 else '#e74c3c') for v in vals]
     
     fig = go.Figure(data=[go.Bar(
-        x=labels, 
-        y=vals, 
-        marker_color=cols, 
+        x=labels, y=vals, marker_color=cols, 
         text=[f'<b>{v:.1f}%</b>' for v in vals], 
-        textposition='outside', 
-        textfont=dict(size=20, color='#333'), 
-        width=0.5
+        textposition='outside', textfont=dict(size=20, color='#333'), width=0.5
     )])
     fig.update_layout(
         title=dict(text=f"<b>{get_text('time_risk', lang)}</b>", font=dict(size=18), x=0.5),
         xaxis=dict(tickfont=dict(size=16)), 
-        yaxis=dict(
-            title=f"<b>{get_text('risk_prob', lang)} (%)</b>", 
-            title_font=dict(size=16), 
-            tickfont=dict(size=14), 
-            range=[0, max(vals) * 1.35 if max(vals) > 0 else 100], 
-            gridcolor='#e8e8e8'
-        ),
-        height=350, 
-        margin=dict(l=70, r=30, t=70, b=50), 
-        paper_bgcolor='rgba(0,0,0,0)', 
-        plot_bgcolor='white'
+        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), 
+                   tickfont=dict(size=14), range=[0, max(vals) * 1.35 if max(vals) > 0 else 100], gridcolor='#e8e8e8'),
+        height=350, margin=dict(l=70, r=30, t=70, b=50), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white'
     )
     return fig
 
 
 def make_survival_chart(surv, tp, lang):
-    """创建生存曲线图"""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=tp, 
-        y=surv, 
-        mode='lines+markers', 
-        line=dict(color='#3498db', width=3), 
-        fill='tozeroy', 
-        fillcolor='rgba(52,152,219,0.15)', 
+        x=tp, y=surv, mode='lines+markers', 
+        line=dict(color='#3498db', width=3), fill='tozeroy', fillcolor='rgba(52,152,219,0.15)', 
         marker=dict(size=10, color='#3498db', line=dict(width=2, color='white'))
     ))
     fig.update_layout(
         title=dict(text=f"<b>{get_text('survival_curve', lang)}</b>", font=dict(size=18), x=0.5),
-        xaxis=dict(
-            title=f"<b>{get_text('time_months', lang)}</b>", 
-            title_font=dict(size=16), 
-            tickfont=dict(size=14), 
-            gridcolor='#e8e8e8', 
-            dtick=12
-        ),
-        yaxis=dict(
-            title=f"<b>{get_text('survival_prob', lang)}</b>", 
-            title_font=dict(size=16), 
-            tickfont=dict(size=14), 
-            range=[0, 1.05], 
-            gridcolor='#e8e8e8', 
-            tickformat='.0%'
-        ),
-        height=350, 
-        margin=dict(l=70, r=30, t=70, b=60), 
-        paper_bgcolor='rgba(0,0,0,0)', 
-        plot_bgcolor='white', 
-        showlegend=False
+        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
+        yaxis=dict(title=f"<b>{get_text('survival_prob', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), range=[0, 1.05], gridcolor='#e8e8e8', tickformat='.0%'),
+        height=350, margin=dict(l=70, r=30, t=70, b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
     )
     return fig
 
 
 def make_cumulative_chart(cif, tp, lang):
-    """创建累积风险曲线图"""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=tp, 
-        y=cif, 
-        mode='lines+markers', 
-        line=dict(color='#e74c3c', width=3), 
-        fill='tozeroy', 
-        fillcolor='rgba(231,76,60,0.15)', 
+        x=tp, y=cif, mode='lines+markers', 
+        line=dict(color='#e74c3c', width=3), fill='tozeroy', fillcolor='rgba(231,76,60,0.15)', 
         marker=dict(size=10, color='#e74c3c', symbol='square', line=dict(width=2, color='white'))
     ))
     fig.update_layout(
         title=dict(text=f"<b>{get_text('cumulative_risk_curve', lang)}</b>", font=dict(size=18), x=0.5),
-        xaxis=dict(
-            title=f"<b>{get_text('time_months', lang)}</b>", 
-            title_font=dict(size=16), 
-            tickfont=dict(size=14), 
-            gridcolor='#e8e8e8', 
-            dtick=12
-        ),
-        yaxis=dict(
-            title=f"<b>{get_text('risk_prob', lang)}</b>", 
-            title_font=dict(size=16), 
-            tickfont=dict(size=14), 
-            range=[0, 1.05], 
-            gridcolor='#e8e8e8', 
-            tickformat='.0%'
-        ),
-        height=350, 
-        margin=dict(l=70, r=30, t=70, b=60), 
-        paper_bgcolor='rgba(0,0,0,0)', 
-        plot_bgcolor='white', 
-        showlegend=False
+        xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
+        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), range=[0, 1.05], gridcolor='#e8e8e8', tickformat='.0%'),
+        height=350, margin=dict(l=70, r=30, t=70, b=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white', showlegend=False
     )
     return fig
 
 
 def make_pie(df, lang):
-    """创建风险分布饼图"""
     rc = get_text("risk_level", lang)
     h = len(df[df[rc].str.contains('High|高', case=False, na=False)]) if rc in df.columns else 0
     m = len(df[df[rc].str.contains('Intermediate|中', case=False, na=False)]) if rc in df.columns else 0
@@ -1446,18 +1398,12 @@ def make_pie(df, lang):
     
     fig = go.Figure(data=[go.Pie(
         labels=[get_text('low_risk', lang), get_text('medium_risk', lang), get_text('high_risk', lang)], 
-        values=[l, m, h], 
-        marker_colors=['#27ae60', '#f39c12', '#e74c3c'], 
-        hole=0.45, 
-        textinfo='label+percent+value', 
-        textfont=dict(size=15), 
-        pull=[0, 0, 0.05]
+        values=[l, m, h], marker_colors=['#27ae60', '#f39c12', '#e74c3c'], hole=0.45, 
+        textinfo='label+percent+value', textfont=dict(size=15), pull=[0, 0, 0.05]
     )])
     fig.update_layout(
         title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5), 
-        height=380, 
-        margin=dict(l=20, r=20, t=70, b=20), 
-        paper_bgcolor='rgba(0,0,0,0)', 
+        height=380, margin=dict(l=20, r=20, t=70, b=20), paper_bgcolor='rgba(0,0,0,0)', 
         legend=dict(font=dict(size=14), orientation='h', yanchor='bottom', y=-0.12, xanchor='center', x=0.5)
     )
     return fig
@@ -1465,7 +1411,6 @@ def make_pie(df, lang):
 
 # ================== PDF生成 ==================
 def make_pdf(df, lang):
-    """生成批量预测PDF报告"""
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4)
     styles = getSampleStyleSheet()
@@ -1497,14 +1442,14 @@ def make_pdf(df, lang):
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), 
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'), 
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), 
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('FONTSIZE', (0, 0), (-1, -1), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
     ]))
     
-    story.extend([
-        tbl, 
-        Spacer(1, 20), 
-        Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))
-    ])
+    story.extend([tbl, Spacer(1, 20), 
+        Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))])
     
     doc.build(story)
     buf.seek(0)
@@ -1512,7 +1457,6 @@ def make_pdf(df, lang):
 
 
 def make_single_pdf(res, lang):
-    """生成单例预测PDF报告"""
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4)
     styles = getSampleStyleSheet()
@@ -1544,399 +1488,38 @@ def make_single_pdf(res, lang):
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), 
         ('FONTSIZE', (0, 0), (-1, -1), 11),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('TOPPADDING', (0, 0), (-1, 0), 12),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
     ]))
     
-    story.extend([
-        tbl, 
-        Spacer(1, 20), 
-        Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))
-    ])
+    story.extend([tbl, Spacer(1, 20), 
+        Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))])
     
     doc.build(story)
     buf.seek(0)
     return buf.getvalue()
 
 
-# ================== 更新后的输入变量定义 ==================
-INPUT_VARIABLES = {
-    # 基本信息
-    "age": {
-        "zh": "年龄", 
-        "en": "Age", 
-        "type": "number", 
-        "min": 18, 
-        "max": 100, 
-        "default": 50, 
-        "unit": {"zh": "岁", "en": "yrs"}
-    },
-    "family_cancer_history": {
-        "zh": "家族史", 
-        "en": "Family Cancer History", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "sexual_history": {
-        "zh": "性生活史", 
-        "en": "Sexual History", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "parity": {
-        "zh": "生育", 
-        "en": "Parity", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "menopausal_status": {
-        "zh": "绝经", 
-        "en": "Menopausal Status", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "comorbidities": {
-        "zh": "内科疾病", 
-        "en": "Comorbidities", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "smoking_drinking_history": {
-        "zh": "吸烟史", 
-        "en": "Smoking and Drinking History", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "receive_estrogens": {
-        "zh": "雌激素暴露史", 
-        "en": "Receive Estrogens", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "ovulation_induction": {
-        "zh": "促排卵后", 
-        "en": "Ovulation Induction", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    
-    # 症状与手术信息
-    "presenting_symptom": {
-        "zh": "症状", 
-        "en": "Presenting Symptom", 
-        "type": "select", 
-        "options": {
-            "abdominal_pain_bloating": {"zh": "腹痛、腹胀", "en": "Abdominal Pain/Bloating"}, 
-            "physical_examination": {"zh": "体检发现", "en": "Physical Examination"},
-            "abnormal_bleeding": {"zh": "异常流血、不规律流血", "en": "Abnormal/Irregular Bleeding"}
-        }
-    },
-    "surgical_route": {
-        "zh": "手术方式", 
-        "en": "Surgical Route", 
-        "type": "select", 
-        "options": {
-            "laparotomy": {"zh": "开腹", "en": "Laparotomy"}, 
-            "laparoscopy": {"zh": "腹腔镜", "en": "Laparoscopy"}
-        }
-    },
-    "tumor_envelope_integrity": {
-        "zh": "肿物破裂", 
-        "en": "Tumor Envelope Integrity", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "fertility_sparing_surgery": {
-        "zh": "保留生育功能", 
-        "en": "Fertility-Sparing Surgery", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "completeness_of_surgery": {
-        "zh": "全面分期", 
-        "en": "Completeness of Surgery", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "omentectomy": {
-        "zh": "清大网", 
-        "en": "Omentectomy", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "lymphadenectomy": {
-        "zh": "清淋巴", 
-        "en": "Lymphadenectomy", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "postoperative_adjuvant_therapy": {
-        "zh": "术后化疗", 
-        "en": "Postoperative Adjuvant Therapy", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    
-    # 病理信息
-    "histological_subtype": {
-        "zh": "病理类型", 
-        "en": "Histological Subtype", 
-        "type": "select", 
-        "options": {
-            "serous": {"zh": "浆液性", "en": "Serous"}, 
-            "mucinous": {"zh": "黏液性", "en": "Mucinous"}, 
-            "endometrioid": {"zh": "子宫内膜样", "en": "Endometrioid"},
-            "clear_cell": {"zh": "透明细胞", "en": "Clear Cell"},
-            "mixed": {"zh": "混合型", "en": "Mixed"},
-            "other": {"zh": "其他", "en": "Other"}
-        }
-    },
-    "micropapillary": {
-        "zh": "微乳头", 
-        "en": "Micropapillary", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "microinfiltration": {
-        "zh": "微浸润", 
-        "en": "Microinfiltration", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "psammoma_bodies_calcification": {
-        "zh": "钙化砂体", 
-        "en": "Psammoma Bodies and Calcification", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "peritoneal_implantation": {
-        "zh": "腹膜种植", 
-        "en": "Peritoneal Implantation", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "ascites_cytology": {
-        "zh": "腹水细胞学", 
-        "en": "Ascites Cytology", 
-        "type": "select", 
-        "options": {
-            "no": {"zh": "否", "en": "No"}, 
-            "yes": {"zh": "是", "en": "Yes"}
-        }
-    },
-    "figo_staging": {
-        "zh": "分期", 
-        "en": "FIGO Staging", 
-        "type": "select", 
-        "options": {
-            "I": {"zh": "I", "en": "I"}, 
-            "II": {"zh": "II", "en": "II"}, 
-            "III": {"zh": "III", "en": "III"}
-        }
-    },
-    "unilateral_or_bilateral": {
-        "zh": "单侧/双侧", 
-        "en": "Unilateral or Bilateral", 
-        "type": "select", 
-        "options": {
-            "unilateral": {"zh": "单侧", "en": "Unilateral"}, 
-            "bilateral": {"zh": "双侧", "en": "Bilateral"}
-        }
-    },
-    "tumor_size": {
-        "zh": "肿瘤直径", 
-        "en": "Tumor Size", 
-        "type": "number", 
-        "min": 0.1, 
-        "max": 50, 
-        "default": 5.0, 
-        "unit": {"zh": "cm", "en": "cm"}
-    },
-    "type_of_lesion": {
-        "zh": "病灶类型", 
-        "en": "Type of Lesion", 
-        "type": "select", 
-        "options": {
-            "exophytic": {"zh": "外生型", "en": "Exophytic"}, 
-            "endophytic": {"zh": "内生型", "en": "Endophytic"}
-        }
-    },
-    "papillary_area_ratio": {
-        "zh": "乳头面积占比", 
-        "en": "Papillary Area Ratio", 
-        "type": "select", 
-        "options": {
-            "<10%": {"zh": "<10%", "en": "<10%"}, 
-            "10-30%": {"zh": "10-30%", "en": "10-30%"}, 
-            "30-50%": {"zh": "30-50%", "en": "30-50%"}, 
-            ">50%": {"zh": ">50%", "en": ">50%"}
-        }
-    },
-    
-    # 肿瘤标志物
-    "ca125": {
-        "zh": "CA125", 
-        "en": "CA125", 
-        "type": "select", 
-        "options": {
-            "normal": {"zh": "正常 (0-35 U/mL)", "en": "Normal (0-35 U/mL)"}, 
-            "abnormal": {"zh": "异常 (>35 U/mL)", "en": "Abnormal (>35 U/mL)"}
-        }
-    },
-    "cea": {
-        "zh": "CEA", 
-        "en": "CEA", 
-        "type": "select", 
-        "options": {
-            "normal": {"zh": "正常 (0-5 ng/mL)", "en": "Normal (0-5 ng/mL)"}, 
-            "abnormal": {"zh": "异常 (>5 ng/mL)", "en": "Abnormal (>5 ng/mL)"}
-        }
-    },
-    "ca199": {
-        "zh": "CA199", 
-        "en": "CA199", 
-        "type": "select", 
-        "options": {
-            "normal": {"zh": "正常 (0-37 U/mL)", "en": "Normal (0-37 U/mL)"}, 
-            "abnormal": {"zh": "异常 (>37 U/mL)", "en": "Abnormal (>37 U/mL)"}
-        }
-    },
-    "afp": {
-        "zh": "AFP", 
-        "en": "AFP", 
-        "type": "select", 
-        "options": {
-            "normal": {"zh": "正常 (0-9 ng/mL)", "en": "Normal (0-9 ng/mL)"}, 
-            "abnormal": {"zh": "异常 (>9 ng/mL)", "en": "Abnormal (>9 ng/mL)"}
-        }
-    },
-    "ca724": {
-        "zh": "CA724", 
-        "en": "CA724", 
-        "type": "select", 
-        "options": {
-            "normal": {"zh": "正常 (0-6.9 U/mL)", "en": "Normal (0-6.9 U/mL)"}, 
-            "abnormal": {"zh": "异常 (>6.9 U/mL)", "en": "Abnormal (>6.9 U/mL)"}
-        }
-    },
-    "he4": {
-        "zh": "HE4", 
-        "en": "HE4", 
-        "type": "select", 
-        "options": {
-            "normal": {"zh": "正常 (0-140 pmol/L)", "en": "Normal (0-140 pmol/L)"}, 
-            "abnormal": {"zh": "异常 (>140 pmol/L)", "en": "Abnormal (>140 pmol/L)"}
-        }
-    }
-}
-
-# ================== 变量分组定义 ==================
-VARIABLE_GROUPS = {
-    "basic_info": [
-        "age", "family_cancer_history", "sexual_history", "parity", 
-        "menopausal_status", "comorbidities", "smoking_drinking_history", 
-        "receive_estrogens", "ovulation_induction"
-    ],
-    "surgical_info": [
-        "presenting_symptom", "surgical_route", "tumor_envelope_integrity", 
-        "fertility_sparing_surgery", "completeness_of_surgery", "omentectomy", 
-        "lymphadenectomy", "postoperative_adjuvant_therapy"
-    ],
-    "pathology_info": [
-        "histological_subtype", "micropapillary", "microinfiltration", 
-        "psammoma_bodies_calcification", "peritoneal_implantation", "ascites_cytology", 
-        "figo_staging", "unilateral_or_bilateral", "tumor_size", "type_of_lesion", 
-        "papillary_area_ratio"
-    ],
-    "tumor_markers": [
-        "ca125", "cea", "ca199", "afp", "ca724", "he4"
-    ]
-}
-
-
 # ================== 输入控件 ==================
 def sel_widget(v, info, lang, pre=""):
-    """选择框控件"""
-    return st.selectbox(
-        info[lang], 
-        list(info['options'].keys()), 
-        format_func=lambda x: info['options'][x][lang], 
-        key=f"{pre}{v}"
-    )
+    options_list = list(info['options'].keys())
+    default_val = info.get('default', options_list[0])
+    default_idx = options_list.index(default_val) if default_val in options_list else 0
+    return st.selectbox(info[lang], options_list, index=default_idx, 
+                        format_func=lambda x: info['options'][x][lang], key=f"{pre}{v}")
 
 
 def num_widget(v, info, lang, pre=""):
-    """数字输入控件"""
     lbl = f"{info[lang]} ({info['unit'][lang]})" if 'unit' in info else info[lang]
-    return st.number_input(
-        lbl, 
-        float(info.get('min', 0)), 
-        float(info.get('max', 100)), 
-        float(info.get('default', 0)), 
-        key=f"{pre}{v}"
-    )
+    return st.number_input(lbl, float(info.get('min', 0)), float(info.get('max', 100)), 
+                           float(info.get('default', 0)), key=f"{pre}{v}")
 
 
-# ================== 主函数（更新后的输入部分）==================
+# ================== 主函数 ==================
 def main():
     models = load_models()
     
-    # ========== 模型状态显示 ==========
+    # 模型状态显示
     if models.get('ok', False):
         st.markdown("""
         <div class="status-box status-success">
@@ -1953,14 +1536,6 @@ def main():
         with st.expander("🔍 查看详细加载日志 | View Load Log", expanded=True):
             for log in models.get('log', []):
                 st.text(log)
-            
-            st.markdown("---")
-            st.warning("""
-            **解决方法 | Solution:**
-            1. 确保 `results_clinical_enhanced_v3/` 目录存在于程序同一目录
-            2. 确保该目录包含所有必需的模型文件
-            3. 如果没有训练好的模型，请先运行模型训练脚本
-            """)
     
     # 顶部栏
     if HAS_LOGO:
@@ -1996,9 +1571,7 @@ def main():
     if HAS_LOGO:
         st.markdown(f"""
         <div class="hospital-header">
-            <div class="header-logo">
-                <img src="data:image/png;base64,{LOGO_BASE64}" alt="Logo">
-            </div>
+            <div class="header-logo"><img src="data:image/png;base64,{LOGO_BASE64}" alt="Logo"></div>
             <div class="header-text">
                 <h1>🏥 {get_text('title', lang)}</h1>
                 <p class="subtitle">{get_text('subtitle', lang)}</p>
@@ -2023,7 +1596,6 @@ def main():
         c1, c2, c3 = st.columns(3)
         data = {}
         
-        # 基本信息列
         with c1:
             st.markdown(f'<div class="module-card"><div class="module-title">📝 {get_text("basic_info", lang)}</div>', unsafe_allow_html=True)
             for v in VARIABLE_GROUPS["basic_info"]:
@@ -2031,14 +1603,12 @@ def main():
                 data[v] = num_widget(v, info, lang, "s_") if info['type'] == 'number' else sel_widget(v, info, lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # 手术信息列
         with c2:
             st.markdown(f'<div class="module-card"><div class="module-title surgery">🔪 {get_text("surgical_info", lang)}</div>', unsafe_allow_html=True)
             for v in VARIABLE_GROUPS["surgical_info"]:
                 data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # 病理信息列
         with c3:
             st.markdown(f'<div class="module-card"><div class="module-title pathology">🔬 {get_text("pathology_info", lang)}</div>', unsafe_allow_html=True)
             for v in VARIABLE_GROUPS["pathology_info"]:
@@ -2046,7 +1616,6 @@ def main():
                 data[v] = num_widget(v, info, lang, "s_") if info['type'] == 'number' else sel_widget(v, info, lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # 肿瘤标志物行
         st.markdown(f'<div class="module-card"><div class="module-title markers">🧪 {get_text("tumor_markers", lang)}</div>', unsafe_allow_html=True)
         mc = st.columns(6)
         for i, v in enumerate(VARIABLE_GROUPS["tumor_markers"]):
@@ -2063,31 +1632,25 @@ def main():
             with st.spinner(get_text('processing', lang)):
                 res = predict(data, models)
                 
-                # ========== 调试信息 ==========
+                # 调试信息
                 with st.expander(f"🔧 {get_text('debug_info', lang)} | Debug Info"):
                     col_d1, col_d2 = st.columns(2)
-                    
                     with col_d1:
                         st.markdown(f"**{get_text('input_data', lang)}:**")
                         encoded_data = {}
-                        for v in INPUT_VARIABLES:
+                        for v in VARIABLE_ORDER:
                             info = INPUT_VARIABLES[v]
                             if info['type'] == 'select':
-                                encoded_data[v] = f"{data[v]} → {encode_option(v, data[v])}"
+                                encoded_data[f"{v} ({VARIABLE_ORDER.index(v)})"] = f"{data.get(v)} → {encode_option(v, data.get(v))}"
                             else:
-                                encoded_data[v] = data[v]
+                                encoded_data[f"{v} ({VARIABLE_ORDER.index(v)})"] = data.get(v)
                         st.json(encoded_data)
-                    
                     with col_d2:
                         st.markdown(f"**{get_text('processed_features', lang)}:**")
                         X_proc = preprocess(data, models)
-                        st.write(f"形状 Shape: {X_proc.shape}")
-                        st.write(f"范围 Range: [{X_proc.min():.4f}, {X_proc.max():.4f}]")
-                        st.write(f"均值 Mean: {X_proc.mean():.4f}")
-                        st.write(f"标准差 Std: {X_proc.std():.4f}")
-                    
+                        st.write(f"形状: {X_proc.shape}")
+                        st.write(f"范围: [{X_proc.min():.4f}, {X_proc.max():.4f}]")
                     st.markdown("---")
-                    st.markdown("**模型输出详情 | Model Output:**")
                     debug_cols = st.columns(4)
                     debug_cols[0].metric("DeepSurv原始", f"{res.get('raw_ds', 0):.4f}")
                     debug_cols[1].metric("DeepSurv归一化", f"{res.get('p_ds', 0):.4f}")
@@ -2097,7 +1660,6 @@ def main():
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown(f'<div class="result-section"><div class="result-title">📊 {get_text("prediction_results", lang)}</div>', unsafe_allow_html=True)
                 
-                # 2x2布局
                 row1_c1, row1_c2 = st.columns(2)
                 with row1_c1:
                     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
@@ -2132,7 +1694,7 @@ def main():
                 st.markdown(f"""
                 <div class="advice-box {css}">
                     <h4>💊 {get_text('clinical_advice', lang)} — {get_text(lv, lang)} ({r*100:.1f}%)</h4>
-                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; line-height: 1.8; font-size: 0.95rem;">{get_text(adv, lang)}</pre>
+                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; line-height: 1.8;">{get_text(adv, lang)}</pre>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -2149,20 +1711,11 @@ def main():
                     buf = io.BytesIO()
                     with pd.ExcelWriter(buf, engine='openpyxl') as w: 
                         df_exp.to_excel(w, index=False)
-                    st.download_button(
-                        f"📊 {get_text('export_excel', lang)}", 
-                        buf.getvalue(), 
-                        f"result_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", 
-                        use_container_width=True
-                    )
+                    st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), 
+                                       f"result_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
                 with ec2:
-                    st.download_button(
-                        f"📄 {get_text('export_pdf', lang)}", 
-                        make_single_pdf(res, lang), 
-                        f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", 
-                        "application/pdf", 
-                        use_container_width=True
-                    )
+                    st.download_button(f"📄 {get_text('export_pdf', lang)}", make_single_pdf(res, lang), 
+                                       f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
     
     # ========== 批量预测 ==========
     with tab2:
@@ -2211,21 +1764,14 @@ def main():
                             st.plotly_chart(make_pie(res_df, lang), use_container_width=True)
                         with cc2:
                             if '_r' in res_df.columns:
-                                fig = go.Figure(go.Histogram(
-                                    x=res_df['_r'] * 100, 
-                                    nbinsx=20, 
-                                    marker_color='#3498db', 
-                                    opacity=0.8
-                                ))
+                                fig = go.Figure(go.Histogram(x=res_df['_r'] * 100, nbinsx=20, marker_color='#3498db', opacity=0.8))
                                 fig.add_vline(x=30, line_dash="dash", line_color="#27ae60", line_width=2)
                                 fig.add_vline(x=60, line_dash="dash", line_color="#e74c3c", line_width=2)
                                 fig.update_layout(
                                     title=dict(text=f"<b>{get_text('risk_distribution', lang)}</b>", font=dict(size=18), x=0.5), 
-                                    xaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), tickfont=dict(size=14)), 
-                                    yaxis=dict(title=f"<b>{get_text('total_patients', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14)), 
-                                    height=380, 
-                                    paper_bgcolor='rgba(0,0,0,0)', 
-                                    plot_bgcolor='white'
+                                    xaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>"), 
+                                    yaxis=dict(title=f"<b>{get_text('total_patients', lang)}</b>"), 
+                                    height=380, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white'
                                 )
                                 st.plotly_chart(fig, use_container_width=True)
                         
@@ -2233,10 +1779,8 @@ def main():
                         
                         def hl(row):
                             v = str(row.get(rc, ''))
-                            if 'High' in v or '高' in v: 
-                                return ['background-color:#f8d7da'] * len(row)
-                            if 'Intermediate' in v or '中' in v: 
-                                return ['background-color:#fff3cd'] * len(row)
+                            if 'High' in v or '高' in v: return ['background-color:#f8d7da'] * len(row)
+                            if 'Intermediate' in v or '中' in v: return ['background-color:#fff3cd'] * len(row)
                             return ['background-color:#d4edda'] * len(row)
                         
                         st.dataframe(disp.style.apply(hl, axis=1), use_container_width=True, height=350)
@@ -2246,39 +1790,22 @@ def main():
                         with e1:
                             buf = io.StringIO()
                             disp.to_csv(buf, index=False, encoding='utf-8-sig')
-                            st.download_button(
-                                f"📋 {get_text('export_csv', lang)}", 
-                                buf.getvalue(), 
-                                f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", 
-                                use_container_width=True
-                            )
+                            st.download_button(f"📋 {get_text('export_csv', lang)}", buf.getvalue(), 
+                                               f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", use_container_width=True)
                         with e2:
                             buf = io.BytesIO()
-                            with pd.ExcelWriter(buf, engine='openpyxl') as w: 
-                                disp.to_excel(w, index=False)
-                            st.download_button(
-                                f"📊 {get_text('export_excel', lang)}", 
-                                buf.getvalue(), 
-                                f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", 
-                                use_container_width=True
-                            )
+                            with pd.ExcelWriter(buf, engine='openpyxl') as w: disp.to_excel(w, index=False)
+                            st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), 
+                                               f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
                         with e3:
-                            st.download_button(
-                                f"📄 {get_text('export_pdf', lang)}", 
-                                make_pdf(res_df, lang), 
-                                f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", 
-                                "application/pdf", 
-                                use_container_width=True
-                            )
+                            st.download_button(f"📄 {get_text('export_pdf', lang)}", make_pdf(res_df, lang), 
+                                               f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
                         
                         if h > 0:
                             st.markdown("---")
                             st.markdown(f"### ⚠️ {get_text('high_risk_attention', lang)}")
                             hdf = disp[disp[rc].str.contains('High|高', case=False, na=False)]
-                            st.dataframe(
-                                hdf.style.apply(lambda x: ['background-color:#f8d7da'] * len(x), axis=1), 
-                                use_container_width=True
-                            )
+                            st.dataframe(hdf.style.apply(lambda x: ['background-color:#f8d7da'] * len(x), axis=1), use_container_width=True)
             except Exception as e:
                 st.error(f"Error: {e}")
                 import traceback
@@ -2289,27 +1816,4 @@ def main():
     st.info(get_text('disclaimer', lang))
     
     if HAS_LOGO:
-        st.markdown(f"""
-        <div class="footer">
-            <div class="footer-logo">
-                <img src="data:image/png;base64,{LOGO_BASE64}" alt="Logo">
-            </div>
-            <div class="footer-text">
-                <p class="hospital-name">{get_text('hospital', lang)}</p>
-                <p class="version">Cancer Recurrence Risk Prediction System v2.0</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div class="footer">
-            <div class="footer-text">
-                <p class="hospital-name">🏥 {get_text('hospital', lang)}</p>
-                <p class="version">Cancer Recurrence Risk Prediction System v2.0</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-if __name__ == "__main__":
-    main()
+        
