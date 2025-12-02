@@ -17,7 +17,6 @@ import json
 import io
 import base64
 from datetime import datetime
-from typing import Dict
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -38,12 +37,10 @@ st.set_page_config(
 def load_logo():
     """加载Logo图片，返回Base64编码"""
     logo_paths = ['logo.png', 'logo.jpg', 'logo.jpeg', 'assets/logo.png']
-    
     for path in logo_paths:
         if os.path.exists(path):
             with open(path, "rb") as f:
                 return base64.b64encode(f.read()).decode()
-    
     return None
 
 LOGO_BASE64 = load_logo()
@@ -299,7 +296,6 @@ TRANSLATIONS = {
     "title": {"zh": "肿瘤复发风险预测系统", "en": "Cancer Recurrence Prediction System"},
     "subtitle": {"zh": "临床决策支持平台", "en": "Clinical Decision Support Platform"},
     "hospital": {"zh": "中国医科大学附属盛京医院", "en": "Shengjing Hospital of China Medical University"},
-    "hospital_short": {"zh": "盛京医院", "en": "Shengjing Hospital"},
     "single_patient": {"zh": "单例预测", "en": "Single Prediction"},
     "batch_prediction": {"zh": "批量预测", "en": "Batch Prediction"},
     "basic_info": {"zh": "基本信息", "en": "Basic Info"},
@@ -348,9 +344,6 @@ TRANSLATIONS = {
     "month_12": {"zh": "12个月", "en": "12M"},
     "month_36": {"zh": "36个月", "en": "36M"},
     "month_60": {"zh": "60个月", "en": "60M"},
-    "model_status": {"zh": "模型状态", "en": "Model Status"},
-    "model_loaded": {"zh": "✅ 已成功加载训练好的模型", "en": "✅ Trained model loaded successfully"},
-    "model_not_loaded": {"zh": "❌ 未找到训练好的模型", "en": "❌ Trained model not found"},
     "debug_info": {"zh": "调试信息", "en": "Debug Info"},
     "input_data": {"zh": "输入数据", "en": "Input Data"},
     "processed_features": {"zh": "预处理后特征", "en": "Processed Features"},
@@ -370,45 +363,44 @@ TRANSLATIONS = {
 
 # ================== 变量顺序定义（与神经网络输入一致）==================
 VARIABLE_ORDER = [
-    "age",                          # 0: 年龄
-    "family_cancer_history",        # 1: 家族史
-    "sexual_history",               # 2: 性生活史
-    "parity",                       # 3: 生育
-    "menopausal_status",            # 4: 绝经
-    "comorbidities",                # 5: 内科疾病
-    "presenting_symptom",           # 6: 症状
-    "surgical_route",               # 7: 手术方式
-    "tumor_envelope_integrity",     # 8: 肿物破裂
-    "fertility_sparing_surgery",    # 9: 保留生育功能
-    "completeness_of_surgery",      # 10: 全面分期
-    "omentectomy",                  # 11: 清大网
-    "lymphadenectomy",              # 12: 清淋巴
-    "histological_subtype",         # 13: 病理类型
-    "micropapillary",               # 14: 微乳头
-    "microinfiltration",            # 15: 微浸润
-    "psammoma_bodies_calcification",# 16: 钙化砂体
-    "peritoneal_implantation",      # 17: 腹膜种植
-    "ascites_cytology",             # 18: 腹水细胞学
-    "figo_staging",                 # 19: 分期
-    "unilateral_or_bilateral",      # 20: 单侧/双侧
-    "tumor_size",                   # 21: 肿瘤直径
-    "ca125",                        # 22: CA125
-    "cea",                          # 23: CEA
-    "ca199",                        # 24: CA199
-    "afp",                          # 25: AFP
-    "ca724",                        # 26: CA724
-    "he4",                          # 27: HE4
-    "smoking_drinking_history",     # 28: 吸烟史
-    "receive_estrogens",            # 29: 雌激素暴露史
-    "ovulation_induction",          # 30: 促排卵后
-    "postoperative_adjuvant_therapy",# 31: 术后化疗
-    "type_of_lesion",               # 32: 病灶类型
-    "papillary_area_ratio",         # 33: 乳头面积占比
+    "age",                          # 0
+    "family_cancer_history",        # 1
+    "sexual_history",               # 2
+    "parity",                       # 3
+    "menopausal_status",            # 4
+    "comorbidities",                # 5
+    "presenting_symptom",           # 6
+    "surgical_route",               # 7
+    "tumor_envelope_integrity",     # 8
+    "fertility_sparing_surgery",    # 9
+    "completeness_of_surgery",      # 10
+    "omentectomy",                  # 11
+    "lymphadenectomy",              # 12
+    "histological_subtype",         # 13
+    "micropapillary",               # 14
+    "microinfiltration",            # 15
+    "psammoma_bodies_calcification",# 16
+    "peritoneal_implantation",      # 17
+    "ascites_cytology",             # 18
+    "figo_staging",                 # 19
+    "unilateral_or_bilateral",      # 20
+    "tumor_size",                   # 21
+    "ca125",                        # 22
+    "cea",                          # 23
+    "ca199",                        # 24
+    "afp",                          # 25
+    "ca724",                        # 26
+    "he4",                          # 27
+    "smoking_drinking_history",     # 28
+    "receive_estrogens",            # 29
+    "ovulation_induction",          # 30
+    "postoperative_adjuvant_therapy",# 31
+    "type_of_lesion",               # 32
+    "papillary_area_ratio",         # 33
 ]
 
-# ================== 输入变量定义（带高风险默认值）==================
+# ================== 输入变量定义（高风险默认值）==================
 INPUT_VARIABLES = {
-    # 0: 年龄
     "age": {
         "zh": "年龄", 
         "en": "Age", 
@@ -419,7 +411,6 @@ INPUT_VARIABLES = {
             ">40": {"zh": ">40岁", "en": ">40 years"}
         }
     },
-    # 1: 家族史
     "family_cancer_history": {
         "zh": "家族史", 
         "en": "Family Cancer History", 
@@ -430,7 +421,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 2: 性生活史
     "sexual_history": {
         "zh": "性生活史", 
         "en": "Sexual History", 
@@ -441,7 +431,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 3: 生育
     "parity": {
         "zh": "生育", 
         "en": "Parity", 
@@ -452,7 +441,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 4: 绝经
     "menopausal_status": {
         "zh": "绝经", 
         "en": "Menopausal Status", 
@@ -463,7 +451,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 5: 内科疾病
     "comorbidities": {
         "zh": "内科疾病", 
         "en": "Comorbidities", 
@@ -474,7 +461,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 6: 症状
     "presenting_symptom": {
         "zh": "症状", 
         "en": "Presenting Symptom", 
@@ -486,7 +472,6 @@ INPUT_VARIABLES = {
             "abnormal_bleeding": {"zh": "异常流血、不规律流血", "en": "Abnormal/Irregular Bleeding"}
         }
     },
-    # 7: 手术方式
     "surgical_route": {
         "zh": "手术方式", 
         "en": "Surgical Route", 
@@ -497,7 +482,6 @@ INPUT_VARIABLES = {
             "laparoscopy": {"zh": "腹腔镜", "en": "Laparoscopy"}
         }
     },
-    # 8: 肿物破裂
     "tumor_envelope_integrity": {
         "zh": "肿物破裂", 
         "en": "Tumor Envelope Integrity", 
@@ -508,7 +492,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 9: 保留生育功能
     "fertility_sparing_surgery": {
         "zh": "保留生育功能", 
         "en": "Fertility-Sparing Surgery", 
@@ -519,7 +502,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 10: 全面分期
     "completeness_of_surgery": {
         "zh": "全面分期", 
         "en": "Completeness of Surgery", 
@@ -530,7 +512,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 11: 清大网
     "omentectomy": {
         "zh": "清大网", 
         "en": "Omentectomy", 
@@ -541,7 +522,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 12: 清淋巴
     "lymphadenectomy": {
         "zh": "清淋巴", 
         "en": "Lymphadenectomy", 
@@ -552,7 +532,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 13: 病理类型
     "histological_subtype": {
         "zh": "病理类型", 
         "en": "Histological Subtype", 
@@ -567,7 +546,6 @@ INPUT_VARIABLES = {
             "brenner": {"zh": "Brenner瘤 (5)", "en": "Brenner Tumor (5)"}
         }
     },
-    # 14: 微乳头
     "micropapillary": {
         "zh": "微乳头", 
         "en": "Micropapillary", 
@@ -578,7 +556,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 15: 微浸润
     "microinfiltration": {
         "zh": "微浸润", 
         "en": "Microinfiltration", 
@@ -589,7 +566,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 16: 钙化砂体
     "psammoma_bodies_calcification": {
         "zh": "钙化砂体", 
         "en": "Psammoma Bodies and Calcification", 
@@ -600,7 +576,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 17: 腹膜种植
     "peritoneal_implantation": {
         "zh": "腹膜种植", 
         "en": "Peritoneal Implantation", 
@@ -611,7 +586,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 18: 腹水细胞学
     "ascites_cytology": {
         "zh": "腹水细胞学", 
         "en": "Ascites Cytology", 
@@ -622,7 +596,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 19: 分期
     "figo_staging": {
         "zh": "分期", 
         "en": "FIGO Staging", 
@@ -634,7 +607,6 @@ INPUT_VARIABLES = {
             "III": {"zh": "III期", "en": "Stage III"}
         }
     },
-    # 20: 单侧/双侧
     "unilateral_or_bilateral": {
         "zh": "单侧/双侧", 
         "en": "Unilateral or Bilateral", 
@@ -645,7 +617,6 @@ INPUT_VARIABLES = {
             "bilateral": {"zh": "双侧", "en": "Bilateral"}
         }
     },
-    # 21: 肿瘤直径
     "tumor_size": {
         "zh": "肿瘤直径", 
         "en": "Tumor Size", 
@@ -655,7 +626,6 @@ INPUT_VARIABLES = {
         "default": 15.0,
         "unit": {"zh": "cm", "en": "cm"}
     },
-    # 22: CA125
     "ca125": {
         "zh": "CA125", 
         "en": "CA125", 
@@ -666,7 +636,6 @@ INPUT_VARIABLES = {
             "abnormal": {"zh": "异常 (>35 U/mL)", "en": "Abnormal (>35 U/mL)"}
         }
     },
-    # 23: CEA
     "cea": {
         "zh": "CEA", 
         "en": "CEA", 
@@ -677,7 +646,6 @@ INPUT_VARIABLES = {
             "abnormal": {"zh": "异常 (>5 ng/mL)", "en": "Abnormal (>5 ng/mL)"}
         }
     },
-    # 24: CA199
     "ca199": {
         "zh": "CA199", 
         "en": "CA199", 
@@ -688,7 +656,6 @@ INPUT_VARIABLES = {
             "abnormal": {"zh": "异常 (>37 U/mL)", "en": "Abnormal (>37 U/mL)"}
         }
     },
-    # 25: AFP
     "afp": {
         "zh": "AFP", 
         "en": "AFP", 
@@ -699,7 +666,6 @@ INPUT_VARIABLES = {
             "abnormal": {"zh": "异常 (>9 ng/mL)", "en": "Abnormal (>9 ng/mL)"}
         }
     },
-    # 26: CA724
     "ca724": {
         "zh": "CA724", 
         "en": "CA724", 
@@ -710,7 +676,6 @@ INPUT_VARIABLES = {
             "abnormal": {"zh": "异常 (>6.9 U/mL)", "en": "Abnormal (>6.9 U/mL)"}
         }
     },
-    # 27: HE4
     "he4": {
         "zh": "HE4", 
         "en": "HE4", 
@@ -721,7 +686,6 @@ INPUT_VARIABLES = {
             "abnormal": {"zh": "异常 (>140 pmol/L)", "en": "Abnormal (>140 pmol/L)"}
         }
     },
-    # 28: 吸烟史
     "smoking_drinking_history": {
         "zh": "吸烟史", 
         "en": "Smoking and Drinking History", 
@@ -732,7 +696,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 29: 雌激素暴露史
     "receive_estrogens": {
         "zh": "雌激素暴露史", 
         "en": "Receive Estrogens", 
@@ -743,7 +706,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 30: 促排卵后
     "ovulation_induction": {
         "zh": "促排卵后", 
         "en": "Ovulation Induction", 
@@ -754,7 +716,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 31: 术后化疗
     "postoperative_adjuvant_therapy": {
         "zh": "术后化疗", 
         "en": "Postoperative Adjuvant Therapy", 
@@ -765,7 +726,6 @@ INPUT_VARIABLES = {
             "yes": {"zh": "是", "en": "Yes"}
         }
     },
-    # 32: 病灶类型
     "type_of_lesion": {
         "zh": "病灶类型", 
         "en": "Type of Lesion", 
@@ -776,7 +736,6 @@ INPUT_VARIABLES = {
             "endophytic": {"zh": "内生型", "en": "Endophytic"}
         }
     },
-    # 33: 乳头面积占比
     "papillary_area_ratio": {
         "zh": "乳头面积占比", 
         "en": "Papillary Area Ratio", 
@@ -789,7 +748,7 @@ INPUT_VARIABLES = {
     }
 }
 
-# ================== 变量分组定义（用于界面显示）==================
+# ================== 变量分组（界面显示用）==================
 VARIABLE_GROUPS = {
     "basic_info": [
         "age", "family_cancer_history", "sexual_history", "parity", 
@@ -812,9 +771,9 @@ VARIABLE_GROUPS = {
     ]
 }
 
+
 # ================== 数据预处理类 ==================
 class DataPreprocessor:
-    """数据预处理器"""
     def __init__(self, n_features_select=None, scaler_type='robust'):
         self.n_features_select = n_features_select
         self.scaler_type = scaler_type
@@ -837,7 +796,6 @@ class DataPreprocessor:
                 self.selected_features = [f for f, m in zip(feature_names, mask) if m]
         else:
             self.selected_features = feature_names
-            
         return X_scaled
     
     def transform(self, X):
@@ -892,7 +850,9 @@ class EnhancedDeepSurv(nn.Module):
             nn.GELU(),
             nn.Dropout(drop_rate)
         )
-        self.res_blocks = nn.ModuleList([ResidualBlock(hidden_dims[0], drop_rate) for _ in range(n_res_blocks)])
+        self.res_blocks = nn.ModuleList([
+            ResidualBlock(hidden_dims[0], drop_rate) for _ in range(n_res_blocks)
+        ])
         self.down_layers = nn.ModuleList()
         for i in range(len(hidden_dims) - 1):
             self.down_layers.append(nn.Sequential(
@@ -979,8 +939,10 @@ class EnhancedDenoisingAE(nn.Module):
         
     def forward(self, x, noise_factor=0.1):
         if self.training and noise_factor > 0:
-            x = x + torch.randn_like(x) * noise_factor
-        z = self.encoder(x)
+            x_noisy = x + torch.randn_like(x) * noise_factor
+        else:
+            x_noisy = x
+        z = self.encoder(x_noisy)
         return self.decoder(z), z
     
     def encode(self, x):
@@ -1064,11 +1026,7 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = {}
     ok = False
-    load_log = []
-    
-    load_log.append(f"📁 模型目录: {model_dir}")
-    load_log.append(f"💻 设备: {device}")
-    load_log.append(f"📂 目录存在: {os.path.exists(model_dir)}")
+    load_log = [f"📁 模型目录: {model_dir}", f"💻 设备: {device}"]
     
     try:
         req_files = [
@@ -1077,91 +1035,58 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
             'time_cuts.npy', 'ds_min_max.npy', 'best_parameters.json'
         ]
         
-        missing_files = []
-        load_log.append("\n📋 文件检查:")
-        for f in req_files:
-            path = os.path.join(model_dir, f)
-            exists = os.path.exists(path)
-            if exists:
-                size = os.path.getsize(path)
-                load_log.append(f"  ✅ {f} ({size/1024:.1f} KB)")
-            else:
-                load_log.append(f"  ❌ {f} - 未找到")
-                missing_files.append(f)
+        missing = [f for f in req_files if not os.path.exists(os.path.join(model_dir, f))]
         
-        if not missing_files:
-            load_log.append("\n🔄 正在加载模型...")
-            
+        if not missing:
             with open(os.path.join(model_dir, "best_parameters.json")) as f: 
                 params = json.load(f)
-            load_log.append(f"  ✅ 参数加载成功")
-            
             prep = joblib.load(os.path.join(model_dir, "preprocessor.joblib"))
-            load_log.append(f"  ✅ 预处理器加载成功")
-            
             time_cuts = np.load(os.path.join(model_dir, "time_cuts.npy"))
             ds_mm = np.load(os.path.join(model_dir, "ds_min_max.npy"))
-            load_log.append(f"  ✅ 时间切分: {len(time_cuts)} 个点")
             
             in_dim = prep.scaler.n_features_in_
             if hasattr(prep, 'selector') and prep.selector is not None:
                 in_dim = prep.selector.k if hasattr(prep.selector, 'k') else in_dim
-            load_log.append(f"  📊 输入维度: {in_dim}")
             
-            ae_h1 = params.get('ae_h1', 256)
-            ae_h2 = params.get('ae_h2', 128)
-            lat = params.get('ae_latent', 64)
+            ae_h1, ae_h2, lat = params.get('ae_h1', 256), params.get('ae_h2', 128), params.get('ae_latent', 64)
             fused = lat * 2
             
             ae = EnhancedDenoisingAE(in_dim, [ae_h1, ae_h2], lat)
             ae.load_state_dict(torch.load(os.path.join(model_dir, "model_ae.pt"), map_location=device))
             ae.eval()
-            load_log.append("  ✅ AutoEncoder 加载成功")
             
             trans = EnhancedTransformer(lat, n_heads=4, ff_dim=256, n_layers=2)
             trans.load_state_dict(torch.load(os.path.join(model_dir, "model_trans.pt"), map_location=device))
             trans.eval()
-            load_log.append("  ✅ Transformer 加载成功")
             
             ds_h1, ds_h2, ds_h3 = params.get('ds_h1', 256), params.get('ds_h2', 128), params.get('ds_h3', 64)
             ds = EnhancedDeepSurv(fused, [ds_h1, ds_h2, ds_h3], drop_rate=params.get('ds_drop', 0.3))
             ds.load_state_dict(torch.load(os.path.join(model_dir, "model_deepsurv.pt"), map_location=device))
             ds.eval()
-            load_log.append("  ✅ DeepSurv 加载成功")
             
             dh_h1, dh_h2 = params.get('dh_h1', 256), params.get('dh_h2', 128)
-            n_durations = len(time_cuts) - 1
-            dh = EnhancedDeepHit(fused, [dh_h1, dh_h2], n_durations)
+            dh = EnhancedDeepHit(fused, [dh_h1, dh_h2], len(time_cuts) - 1)
             dh.load_state_dict(torch.load(os.path.join(model_dir, "model_deephit.pt"), map_location=device))
             dh.eval()
-            load_log.append("  ✅ DeepHit 加载成功")
             
             fusion = LearnableFusion()
             fusion.load_state_dict(torch.load(os.path.join(model_dir, "model_fusion.pt"), map_location=device))
             fusion.eval()
-            load_log.append("  ✅ Fusion 加载成功")
             
             models = {
-                'ae': ae.to(device), 'trans': trans.to(device), 
-                'ds': ds.to(device), 'dh': dh.to(device), 
-                'fusion': fusion.to(device), 'prep': prep, 
-                'time_cuts': time_cuts, 'ds_mm': ds_mm, 
-                'device': device, 'params': params
+                'ae': ae.to(device), 'trans': trans.to(device), 'ds': ds.to(device), 
+                'dh': dh.to(device), 'fusion': fusion.to(device), 'prep': prep, 
+                'time_cuts': time_cuts, 'ds_mm': ds_mm, 'device': device, 'params': params
             }
             ok = True
-            load_log.append("\n🎉 所有模型加载成功！")
+            load_log.append("✅ 所有模型加载成功")
         else:
-            load_log.append(f"\n❌ 缺少 {len(missing_files)} 个文件")
-    
+            load_log.append(f"❌ 缺少文件: {missing}")
     except Exception as e:
-        load_log.append(f"\n❌ 加载错误: {str(e)}")
-        import traceback
-        load_log.append(f"详细错误:\n{traceback.format_exc()}")
+        load_log.append(f"❌ 加载错误: {e}")
     
     if not ok:
-        load_log.append("\n⚠️ 使用默认模型")
-        in_dim = len(VARIABLE_ORDER)
-        lat, fused, n_bins = 64, 128, 10
+        in_dim, lat, fused, n_bins = len(VARIABLE_ORDER), 64, 128, 10
         models = {
             'ae': EnhancedDenoisingAE(in_dim, [256, 128], lat).to(device), 
             'trans': EnhancedTransformer(lat).to(device), 
@@ -1174,13 +1099,12 @@ def load_models(model_dir="results_clinical_enhanced_v3"):
         for k in ['ae', 'trans', 'ds', 'dh', 'fusion']: 
             models[k].eval()
     
-    models['ok'] = ok
-    models['log'] = load_log
+    models['ok'], models['log'] = ok, load_log
     return models
 
 
 def preprocess(data, models):
-    """将输入数据转换为模型输入张量，按VARIABLE_ORDER顺序"""
+    """按VARIABLE_ORDER顺序预处理数据"""
     feats = []
     for v in VARIABLE_ORDER:
         info = INPUT_VARIABLES[v]
@@ -1198,15 +1122,7 @@ def preprocess(data, models):
             X = (X - X.mean()) / (X.std() + 1e-8)
     else: 
         X = (X - X.mean()) / (X.std() + 1e-8)
-    
     return X
-
-
-def normalize_risk(risk_score, min_val, max_val):
-    range_val = max_val - min_val
-    if range_val == 0:
-        return np.full_like(risk_score, 0.5)
-    return np.clip((risk_score - min_val) / range_val, 0, 1)
 
 
 def predict(data, models):
@@ -1225,7 +1141,7 @@ def predict(data, models):
         pmf = models['dh'](Xf).cpu().numpy()[0]
         
         mn, mx = models['ds_mm']
-        p_ds = normalize_risk(np.array([r_ds]), mn, mx)[0]
+        p_ds = np.clip((r_ds - mn) / (mx - mn + 1e-8), 0, 1)
         
         cif = np.cumsum(pmf)
         surv = 1 - cif
@@ -1240,16 +1156,14 @@ def predict(data, models):
     tp = (tc[:-1] + tc[1:]) / 2
     n = len(cif)
     
-    def get_risk_at_time(target_time):
-        idx = np.searchsorted(tp, target_time)
-        idx = min(max(idx, 0), n - 1)
+    def get_risk(t):
+        idx = min(max(np.searchsorted(tp, t), 0), n - 1)
         return float(cif[idx])
     
     return {
-        'risk': float(final), 'surv': surv, 'cif': cif, 'tp': tp, 
-        'r12': get_risk_at_time(12), 'r36': get_risk_at_time(36), 
-        'r60': get_risk_at_time(60), 'p_ds': float(p_ds),
-        'r_dh': float(r_dh), 'raw_ds': float(r_ds)
+        'risk': float(final), 'surv': surv, 'cif': cif, 'tp': tp,
+        'r12': get_risk(12), 'r36': get_risk(36), 'r60': get_risk(60),
+        'p_ds': float(p_ds), 'r_dh': float(r_dh), 'raw_ds': float(r_ds)
     }
 
 
@@ -1271,10 +1185,7 @@ def batch_predict(df, models, lang):
         
         try:
             p = predict(data, models)
-            lv = get_text(
-                "low_risk" if p['risk'] < 0.3 else ("medium_risk" if p['risk'] < 0.6 else "high_risk"), 
-                lang
-            )
+            lv = get_text("low_risk" if p['risk'] < 0.3 else ("medium_risk" if p['risk'] < 0.6 else "high_risk"), lang)
             m = get_text("months", lang)
             results.append({
                 get_text("patient_id", lang): row.get('patient_id', row.get('患者编号', i + 1)), 
@@ -1282,12 +1193,10 @@ def batch_predict(df, models, lang):
                 f"12{m}": f"{p['r12']*100:.1f}%", 
                 f"36{m}": f"{p['r36']*100:.1f}%", 
                 f"60{m}": f"{p['r60']*100:.1f}%", 
-                get_text("risk_level", lang): lv, 
-                '_r': p['risk']
+                get_text("risk_level", lang): lv, '_r': p['risk']
             })
         except Exception as e:
             st.warning(f"患者 {i+1} 预测失败: {e}")
-        
         prog.progress((i + 1) / len(df))
     
     prog.empty()
@@ -1295,18 +1204,13 @@ def batch_predict(df, models, lang):
 
 
 def make_template(lang):
-    """生成批量预测模板"""
+    """生成模板"""
     cols = [get_text("patient_id", lang)] + [INPUT_VARIABLES[v][lang] for v in VARIABLE_ORDER]
     data = {cols[0]: [1, 2, 3]}
-    
     for i, v in enumerate(VARIABLE_ORDER):
         info = INPUT_VARIABLES[v]
-        if info['type'] == 'select':
-            default_val = info.get('default', list(info['options'].keys())[0])
-            data[cols[i + 1]] = [default_val] * 3
-        else:
-            data[cols[i + 1]] = [info.get('default', 0)] * 3
-    
+        default = info.get('default', list(info.get('options', {}).keys())[0] if info['type'] == 'select' else 0)
+        data[cols[i + 1]] = [default] * 3
     return pd.DataFrame(data)
 
 
@@ -1325,13 +1229,8 @@ def make_gauge(risk, lang):
         title={'text': f"<b>{get_text('overall_risk', lang)}</b><br><span style='font-size:26px;color:{col}'>{lv}</span>", 'font': {'size': 20}},
         gauge={
             'axis': {'range': [0, 100], 'tickwidth': 2, 'tickcolor': '#555', 'tickfont': {'size': 16}, 'dtick': 25},
-            'bar': {'color': col, 'thickness': 0.7}, 'bgcolor': '#f0f0f0', 
-            'borderwidth': 2, 'bordercolor': '#888',
-            'steps': [
-                {'range': [0, 30], 'color': 'rgba(39,174,96,0.2)'}, 
-                {'range': [30, 60], 'color': 'rgba(243,156,18,0.2)'}, 
-                {'range': [60, 100], 'color': 'rgba(231,76,60,0.2)'}
-            ]
+            'bar': {'color': col, 'thickness': 0.7}, 'bgcolor': '#f0f0f0', 'borderwidth': 2, 'bordercolor': '#888',
+            'steps': [{'range': [0, 30], 'color': 'rgba(39,174,96,0.2)'}, {'range': [30, 60], 'color': 'rgba(243,156,18,0.2)'}, {'range': [60, 100], 'color': 'rgba(231,76,60,0.2)'}]
         }
     ))
     fig.update_layout(height=350, margin=dict(l=30, r=30, t=100, b=30), paper_bgcolor='rgba(0,0,0,0)')
@@ -1343,16 +1242,11 @@ def make_time_bar(r12, r36, r60, lang):
     vals = [r12 * 100, r36 * 100, r60 * 100]
     cols = ['#27ae60' if v < 30 else ('#f39c12' if v < 60 else '#e74c3c') for v in vals]
     
-    fig = go.Figure(data=[go.Bar(
-        x=labels, y=vals, marker_color=cols, 
-        text=[f'<b>{v:.1f}%</b>' for v in vals], 
-        textposition='outside', textfont=dict(size=20, color='#333'), width=0.5
-    )])
+    fig = go.Figure(data=[go.Bar(x=labels, y=vals, marker_color=cols, text=[f'<b>{v:.1f}%</b>' for v in vals], textposition='outside', textfont=dict(size=20, color='#333'), width=0.5)])
     fig.update_layout(
         title=dict(text=f"<b>{get_text('time_risk', lang)}</b>", font=dict(size=18), x=0.5),
         xaxis=dict(tickfont=dict(size=16)), 
-        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), 
-                   tickfont=dict(size=14), range=[0, max(vals) * 1.35 if max(vals) > 0 else 100], gridcolor='#e8e8e8'),
+        yaxis=dict(title=f"<b>{get_text('risk_prob', lang)} (%)</b>", title_font=dict(size=16), tickfont=dict(size=14), range=[0, max(vals) * 1.35 if max(vals) > 0 else 100], gridcolor='#e8e8e8'),
         height=350, margin=dict(l=70, r=30, t=70, b=50), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='white'
     )
     return fig
@@ -1360,11 +1254,7 @@ def make_time_bar(r12, r36, r60, lang):
 
 def make_survival_chart(surv, tp, lang):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=tp, y=surv, mode='lines+markers', 
-        line=dict(color='#3498db', width=3), fill='tozeroy', fillcolor='rgba(52,152,219,0.15)', 
-        marker=dict(size=10, color='#3498db', line=dict(width=2, color='white'))
-    ))
+    fig.add_trace(go.Scatter(x=tp, y=surv, mode='lines+markers', line=dict(color='#3498db', width=3), fill='tozeroy', fillcolor='rgba(52,152,219,0.15)', marker=dict(size=10, color='#3498db', line=dict(width=2, color='white'))))
     fig.update_layout(
         title=dict(text=f"<b>{get_text('survival_curve', lang)}</b>", font=dict(size=18), x=0.5),
         xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
@@ -1376,11 +1266,7 @@ def make_survival_chart(surv, tp, lang):
 
 def make_cumulative_chart(cif, tp, lang):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=tp, y=cif, mode='lines+markers', 
-        line=dict(color='#e74c3c', width=3), fill='tozeroy', fillcolor='rgba(231,76,60,0.15)', 
-        marker=dict(size=10, color='#e74c3c', symbol='square', line=dict(width=2, color='white'))
-    ))
+    fig.add_trace(go.Scatter(x=tp, y=cif, mode='lines+markers', line=dict(color='#e74c3c', width=3), fill='tozeroy', fillcolor='rgba(231,76,60,0.15)', marker=dict(size=10, color='#e74c3c', symbol='square', line=dict(width=2, color='white'))))
     fig.update_layout(
         title=dict(text=f"<b>{get_text('cumulative_risk_curve', lang)}</b>", font=dict(size=18), x=0.5),
         xaxis=dict(title=f"<b>{get_text('time_months', lang)}</b>", title_font=dict(size=16), tickfont=dict(size=14), gridcolor='#e8e8e8', dtick=12),
@@ -1424,33 +1310,14 @@ def make_pdf(df, lang):
     story = [
         Paragraph("Cancer Recurrence Risk Report", ParagraphStyle('T', parent=styles['Heading1'], fontSize=18, spaceAfter=20, alignment=1)),
         Paragraph("Shengjing Hospital of China Medical University", styles['Normal']),
-        Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']), 
-        Spacer(1, 20)
+        Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']), Spacer(1, 20)
     ]
     
-    data = [
-        ["Category", "Count", "%"], 
-        ["Total", str(total), "100%"], 
-        ["High", str(h), f"{h/total*100:.1f}%" if total else "0%"], 
-        ["Medium", str(m), f"{m/total*100:.1f}%" if total else "0%"], 
-        ["Low", str(l), f"{l/total*100:.1f}%" if total else "0%"]
-    ]
-    
+    data = [["Category", "Count", "%"], ["Total", str(total), "100%"], ["High", str(h), f"{h/total*100:.1f}%" if total else "0%"], ["Medium", str(m), f"{m/total*100:.1f}%" if total else "0%"], ["Low", str(l), f"{l/total*100:.1f}%" if total else "0%"]]
     tbl = Table(data, colWidths=[120, 80, 80])
-    tbl.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')), 
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), 
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'), 
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), 
-        ('FONTSIZE', (0, 0), (-1, -1), 11),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
-    ]))
+    tbl.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), ('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('GRID', (0, 0), (-1, -1), 1, colors.black)]))
     
-    story.extend([tbl, Spacer(1, 20), 
-        Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))])
-    
+    story.extend([tbl, Spacer(1, 20), Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))])
     doc.build(story)
     buf.seek(0)
     return buf.getvalue()
@@ -1467,34 +1334,14 @@ def make_single_pdf(res, lang):
     story = [
         Paragraph("Patient Risk Assessment", ParagraphStyle('T', parent=styles['Heading1'], fontSize=18, spaceAfter=20, alignment=1)),
         Paragraph("Shengjing Hospital", styles['Normal']),
-        Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']), 
-        Spacer(1, 20)
+        Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']), Spacer(1, 20)
     ]
     
-    data = [
-        ["Item", "Value"], 
-        ["Risk", f"{r*100:.1f}%"], 
-        ["Level", lv], 
-        ["12M", f"{res['r12']*100:.1f}%"], 
-        ["36M", f"{res['r36']*100:.1f}%"], 
-        ["60M", f"{res['r60']*100:.1f}%"]
-    ]
-    
+    data = [["Item", "Value"], ["Risk", f"{r*100:.1f}%"], ["Level", lv], ["12M", f"{res['r12']*100:.1f}%"], ["36M", f"{res['r36']*100:.1f}%"], ["60M", f"{res['r60']*100:.1f}%"]]
     tbl = Table(data, colWidths=[150, 150])
-    tbl.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')), 
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), 
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'), 
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), 
-        ('FONTSIZE', (0, 0), (-1, -1), 11),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])
-    ]))
+    tbl.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), ('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('FONTSIZE', (0, 0), (-1, -1), 11), ('GRID', (0, 0), (-1, -1), 1, colors.black), ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white])]))
     
-    story.extend([tbl, Spacer(1, 20), 
-        Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))])
-    
+    story.extend([tbl, Spacer(1, 20), Paragraph("For clinical reference only.", ParagraphStyle('D', fontSize=9, textColor=colors.grey))])
     doc.build(story)
     buf.seek(0)
     return buf.getvalue()
@@ -1505,88 +1352,43 @@ def sel_widget(v, info, lang, pre=""):
     options_list = list(info['options'].keys())
     default_val = info.get('default', options_list[0])
     default_idx = options_list.index(default_val) if default_val in options_list else 0
-    return st.selectbox(info[lang], options_list, index=default_idx, 
-                        format_func=lambda x: info['options'][x][lang], key=f"{pre}{v}")
+    return st.selectbox(info[lang], options_list, index=default_idx, format_func=lambda x: info['options'][x][lang], key=f"{pre}{v}")
 
 
 def num_widget(v, info, lang, pre=""):
     lbl = f"{info[lang]} ({info['unit'][lang]})" if 'unit' in info else info[lang]
-    return st.number_input(lbl, float(info.get('min', 0)), float(info.get('max', 100)), 
-                           float(info.get('default', 0)), key=f"{pre}{v}")
+    return st.number_input(lbl, float(info.get('min', 0)), float(info.get('max', 100)), float(info.get('default', 0)), key=f"{pre}{v}")
 
 
 # ================== 主函数 ==================
 def main():
     models = load_models()
     
-    # 模型状态显示
+    # 模型状态
     if models.get('ok', False):
-        st.markdown("""
-        <div class="status-box status-success">
-            ✅ <b>模型状态</b>: 已成功加载训练好的模型 | Trained model loaded successfully
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="status-box status-success">✅ <b>模型状态</b>: 已成功加载训练好的模型</div>', unsafe_allow_html=True)
     else:
-        st.markdown("""
-        <div class="status-box status-error">
-            ❌ <b>模型状态</b>: 未找到训练好的模型，使用默认随机模型！预测结果不可靠！
-        </div>
-        """, unsafe_allow_html=True)
-        
-        with st.expander("🔍 查看详细加载日志 | View Load Log", expanded=True):
-            for log in models.get('log', []):
+        st.markdown('<div class="status-box status-error">❌ <b>模型状态</b>: 未找到训练好的模型，使用默认随机模型</div>', unsafe_allow_html=True)
+        with st.expander("🔍 查看加载日志"):
+            for log in models.get('log', []): 
                 st.text(log)
     
     # 顶部栏
     if HAS_LOGO:
-        st.markdown(f"""
-        <div class="top-bar">
-            <div class="logo-section">
-                <img src="data:image/png;base64,{LOGO_BASE64}" class="logo-img" alt="Logo">
-                <div class="logo-text">
-                    <h2>盛京医院 Shengjing Hospital</h2>
-                    <p>中国医科大学附属盛京医院</p>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="top-bar"><div class="logo-section"><img src="data:image/png;base64,{LOGO_BASE64}" class="logo-img"><div class="logo-text"><h2>盛京医院</h2><p>中国医科大学附属盛京医院</p></div></div></div>', unsafe_allow_html=True)
     else:
-        st.markdown("""
-        <div class="top-bar">
-            <div class="logo-section">
-                <div class="logo-text">
-                    <h2>🏥 盛京医院 Shengjing Hospital</h2>
-                    <p>中国医科大学附属盛京医院</p>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="top-bar"><div class="logo-section"><div class="logo-text"><h2>🏥 盛京医院</h2><p>中国医科大学附属盛京医院</p></div></div></div>', unsafe_allow_html=True)
     
     # 语言选择
     col_space, col_lang = st.columns([10, 1])
     with col_lang:
         lang = LANGUAGES[st.selectbox("🌐", list(LANGUAGES.keys()), label_visibility="collapsed", key="lang")]
     
-    # 医院头部
+    # 头部
     if HAS_LOGO:
-        st.markdown(f"""
-        <div class="hospital-header">
-            <div class="header-logo"><img src="data:image/png;base64,{LOGO_BASE64}" alt="Logo"></div>
-            <div class="header-text">
-                <h1>🏥 {get_text('title', lang)}</h1>
-                <p class="subtitle">{get_text('subtitle', lang)}</p>
-                <p class="hospital-name">{get_text('hospital', lang)}</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="hospital-header"><div class="header-logo"><img src="data:image/png;base64,{LOGO_BASE64}"></div><div class="header-text"><h1>🏥 {get_text("title", lang)}</h1><p class="subtitle">{get_text("subtitle", lang)}</p><p class="hospital-name">{get_text("hospital", lang)}</p></div></div>', unsafe_allow_html=True)
     else:
-        st.markdown(f"""
-        <div class="hospital-header-nologo">
-            <h1>🏥 {get_text('title', lang)}</h1>
-            <p class="subtitle">{get_text('subtitle', lang)}</p>
-            <p class="hospital-name">{get_text('hospital', lang)}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="hospital-header-nologo"><h1>🏥 {get_text("title", lang)}</h1><p class="subtitle">{get_text("subtitle", lang)}</p><p class="hospital-name">{get_text("hospital", lang)}</p></div>', unsafe_allow_html=True)
     
     # 标签页
     tab1, tab2 = st.tabs([f"📋 {get_text('single_patient', lang)}", f"📊 {get_text('batch_prediction', lang)}"])
@@ -1608,7 +1410,6 @@ def main():
             for v in VARIABLE_GROUPS["surgical_info"]:
                 data[v] = sel_widget(v, INPUT_VARIABLES[v], lang, "s_")
             st.markdown('</div>', unsafe_allow_html=True)
-        
         with c3:
             st.markdown(f'<div class="module-card"><div class="module-title pathology">🔬 {get_text("pathology_info", lang)}</div>', unsafe_allow_html=True)
             for v in VARIABLE_GROUPS["pathology_info"]:
@@ -1633,29 +1434,23 @@ def main():
                 res = predict(data, models)
                 
                 # 调试信息
-                with st.expander(f"🔧 {get_text('debug_info', lang)} | Debug Info"):
+                with st.expander(f"🔧 {get_text('debug_info', lang)}"):
                     col_d1, col_d2 = st.columns(2)
                     with col_d1:
                         st.markdown(f"**{get_text('input_data', lang)}:**")
-                        encoded_data = {}
-                        for v in VARIABLE_ORDER:
-                            info = INPUT_VARIABLES[v]
-                            if info['type'] == 'select':
-                                encoded_data[f"{v} ({VARIABLE_ORDER.index(v)})"] = f"{data.get(v)} → {encode_option(v, data.get(v))}"
-                            else:
-                                encoded_data[f"{v} ({VARIABLE_ORDER.index(v)})"] = data.get(v)
-                        st.json(encoded_data)
+                        encoded = {v: f"{data[v]} → {encode_option(v, data[v])}" if INPUT_VARIABLES[v]['type'] == 'select' else data[v] for v in VARIABLE_ORDER}
+                        st.json(encoded)
                     with col_d2:
                         st.markdown(f"**{get_text('processed_features', lang)}:**")
                         X_proc = preprocess(data, models)
-                        st.write(f"形状: {X_proc.shape}")
-                        st.write(f"范围: [{X_proc.min():.4f}, {X_proc.max():.4f}]")
-                    st.markdown("---")
-                    debug_cols = st.columns(4)
-                    debug_cols[0].metric("DeepSurv原始", f"{res.get('raw_ds', 0):.4f}")
-                    debug_cols[1].metric("DeepSurv归一化", f"{res.get('p_ds', 0):.4f}")
-                    debug_cols[2].metric("DeepHit中位", f"{res.get('r_dh', 0):.4f}")
-                    debug_cols[3].metric("融合风险", f"{res['risk']:.4f}")
+                        st.write(f"Shape: {X_proc.shape}, Range: [{X_proc.min():.4f}, {X_proc.max():.4f}]")
+                    
+                    st.markdown("**模型输出:**")
+                    dc = st.columns(4)
+                    dc[0].metric("DeepSurv原始", f"{res.get('raw_ds', 0):.4f}")
+                    dc[1].metric("DeepSurv归一化", f"{res.get('p_ds', 0):.4f}")
+                    dc[2].metric("DeepHit中位", f"{res.get('r_dh', 0):.4f}")
+                    dc[3].metric("融合风险", f"{res['risk']:.4f}")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown(f'<div class="result-section"><div class="result-title">📊 {get_text("prediction_results", lang)}</div>', unsafe_allow_html=True)
@@ -1711,11 +1506,9 @@ def main():
                     buf = io.BytesIO()
                     with pd.ExcelWriter(buf, engine='openpyxl') as w: 
                         df_exp.to_excel(w, index=False)
-                    st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), 
-                                       f"result_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
+                    st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), f"result_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
                 with ec2:
-                    st.download_button(f"📄 {get_text('export_pdf', lang)}", make_single_pdf(res, lang), 
-                                       f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
+                    st.download_button(f"📄 {get_text('export_pdf', lang)}", make_single_pdf(res, lang), f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
     
     # ========== 批量预测 ==========
     with tab2:
@@ -1779,8 +1572,10 @@ def main():
                         
                         def hl(row):
                             v = str(row.get(rc, ''))
-                            if 'High' in v or '高' in v: return ['background-color:#f8d7da'] * len(row)
-                            if 'Intermediate' in v or '中' in v: return ['background-color:#fff3cd'] * len(row)
+                            if 'High' in v or '高' in v: 
+                                return ['background-color:#f8d7da'] * len(row)
+                            if 'Intermediate' in v or '中' in v: 
+                                return ['background-color:#fff3cd'] * len(row)
                             return ['background-color:#d4edda'] * len(row)
                         
                         st.dataframe(disp.style.apply(hl, axis=1), use_container_width=True, height=350)
@@ -1790,16 +1585,14 @@ def main():
                         with e1:
                             buf = io.StringIO()
                             disp.to_csv(buf, index=False, encoding='utf-8-sig')
-                            st.download_button(f"📋 {get_text('export_csv', lang)}", buf.getvalue(), 
-                                               f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", use_container_width=True)
+                            st.download_button(f"📋 {get_text('export_csv', lang)}", buf.getvalue(), f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", use_container_width=True)
                         with e2:
                             buf = io.BytesIO()
-                            with pd.ExcelWriter(buf, engine='openpyxl') as w: disp.to_excel(w, index=False)
-                            st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), 
-                                               f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
+                            with pd.ExcelWriter(buf, engine='openpyxl') as w: 
+                                disp.to_excel(w, index=False)
+                            st.download_button(f"📊 {get_text('export_excel', lang)}", buf.getvalue(), f"batch_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", use_container_width=True)
                         with e3:
-                            st.download_button(f"📄 {get_text('export_pdf', lang)}", make_pdf(res_df, lang), 
-                                               f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
+                            st.download_button(f"📄 {get_text('export_pdf', lang)}", make_pdf(res_df, lang), f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf", "application/pdf", use_container_width=True)
                         
                         if h > 0:
                             st.markdown("---")
@@ -1816,4 +1609,25 @@ def main():
     st.info(get_text('disclaimer', lang))
     
     if HAS_LOGO:
-        
+        st.markdown(f"""
+        <div class="footer">
+            <div class="footer-logo"><img src="data:image/png;base64,{LOGO_BASE64}"></div>
+            <div class="footer-text">
+                <p class="hospital-name">{get_text('hospital', lang)}</p>
+                <p class="version">Cancer Recurrence Risk Prediction System v2.0</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="footer">
+            <div class="footer-text">
+                <p class="hospital-name">🏥 {get_text('hospital', lang)}</p>
+                <p class="version">Cancer Recurrence Risk Prediction System v2.0</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+if __name__ == "__main__":
+    main()
